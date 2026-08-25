@@ -1,0 +1,24 @@
+SIMULATED / FICTIONAL FIXTURE — NOT A REAL FRESHA EMAIL
+=========================================================
+This file does not come from Fresha and does not come from Mehua Lashes. It is a
+guessed, made-up example built only so the "Parse Booking Details" node's
+regex has something concrete to run against while we wait for a real sample.
+The actual field names, layout and wording Fresha uses are UNKNOWN and this
+fixture should NOT be treated as evidence of what a real email looks like.
+
+TO_VALIDATE: replace this entire file with a real Fresha booking-confirmation
+email (forward one, or paste the raw text/headers) before trusting the parser
+built against it. See docs/mehua-deposit-concierge-spec.md.
+
+--- fictional example content below ---
+
+Subject: New booking confirmed - Mehua Lashes
+
+Client: Test Customer
+Service: Classic Full Set
+Date: 2026-09-15 10:00
+Booking reference: TEST-0001
+
+This is an automated notification from Fresha. (fictional placeholder text —
+Fresha's real notification wording, subject line and sender address are not
+yet known.)

@@ -16,26 +16,44 @@ Client books on Fresha → owner gets an email notification → client pays a de
 Fresha booking-confirmation email arrives in owner's Gmail inbox
   → n8n Gmail Trigger polls the inbox
   → parses client name, service, date/time, booking reference from the email
-  → logs a new row in the Google Sheet booking log (status: New)
-  → drafts the deposit-instructions message (amount, payment methods)
+  → fails safely to NEEDS_HUMAN_REVIEW if required fields can't be parsed
+    (never guesses a booking into existence)
+  → logs a new row in the Google Sheet booking log (status: AWAITING_DEPOSIT)
+  → drafts the Rs 500 Juice deposit-instructions message from a template
   → emails the draft to the owner so she can copy it into WhatsApp herself
     (n8n cannot send WhatsApp messages directly — see Constraints)
-  → updates the row: status = Instructions Sent, timestamp
 
-[separate scheduled check, every few hours]
-  → scans the sheet for rows still "Instructions Sent" or "Reminder Sent"
-    older than the reminder/escalation window
-  → drafts a reminder and emails it to the owner
-  → updates status = Reminder Sent
+[separate scheduled check, every 4 hours]
+  → scans the sheet for rows still AWAITING_DEPOSIT past the escalation
+    window with no reminder sent recently
+  → drafts a reminder from a template and emails it to the owner
+  → updates status = OVERDUE
 
-[separate entry point: owner-facing form]
+[separate entry point: owner-facing "report proof" form]
   → owner receives the WhatsApp payment screenshot from the client directly
-    (outside n8n) and checks her bank/Juice statement herself
-  → owner opens a simple n8n form, enters the booking reference, marks it verified
-  → n8n drafts the confirmation + policy + location message and emails it to
-    the owner to send via WhatsApp
-  → updates the row: status = Confirmed, verified_at, verified_by
+    (outside n8n) — this does NOT verify anything by itself
+  → owner submits the booking reference to flag it for verification
+  → updates status = AWAITING_MANUAL_VERIFICATION
+
+[separate entry point: owner-facing "review verification" form]
+  → owner checks her Juice/bank statement herself, then explicitly marks
+    the booking Verified or Rejected — this is the only place in the whole
+    system that can set DEPOSIT_VERIFIED; no OCR/AI/screenshot analysis is
+    used anywhere
+  → if Verified: drafts the confirmation + policy + location message from
+    a template, emails it to the owner to send via WhatsApp, status =
+    DEPOSIT_VERIFIED
+  → if Rejected: status = DEPOSIT_REJECTED, owner is notified it needs her
+    direct follow-up — no automated message goes to the client
 ```
+
+A parallel, dev-only path (`TEST - Simulate New Booking`) injects a fake booking with the same shape a real parsed email would produce, so the whole lifecycle above can be exercised without a real Gmail inbox, a real Fresha email, a real customer, a real Juice transaction, or a real WhatsApp account. See **Testing** below.
+
+## Payment status states
+
+`AWAITING_DEPOSIT` → `PROOF_RECEIVED`* → `AWAITING_MANUAL_VERIFICATION` → `DEPOSIT_VERIFIED` (or `DEPOSIT_REJECTED`), plus `OVERDUE` (escalation) and `NEEDS_HUMAN_REVIEW` (unparseable booking email). *`PROOF_RECEIVED` is logged as a timestamp (`Proof Received At`) rather than a separately-held status, since nothing else happens between "screenshot reported" and "awaiting verification" in this flow — the row moves straight to `AWAITING_MANUAL_VERIFICATION`.
+
+**Only an explicit owner action (the "Review Deposit Verification" form, result = Verified) may set `DEPOSIT_VERIFIED`.** Receiving a screenshot never does this by itself. No OCR, AI model, screenshot analysis or text recognition is used to approve a payment anywhere in this workflow.
 
 ## Hard constraints (do not build around these — they are the owner's explicit boundaries)
 
@@ -45,16 +63,33 @@ Fresha booking-confirmation email arrives in owner's Gmail inbox
 - **No bank/payment details stored in this or any third-party tool** — only the fact that a deposit was verified, by whom, and when.
 - **No WhatsApp Business Platform (paid API) in Phase 1** — stay on the free WhatsApp Business App; that's why every WhatsApp step here is "draft + notify owner," not "send."
 
+## Confirmed deposit rule
+
+`deposit_amount_mur = 500`, `payment_method = "Juice"`. This is confirmed data, not an assumption — treat it as fixed. The actual Juice phone number/account details are **not** available yet; the config holds `juice_payment_details = "TO_VALIDATE_JUICE_PAYMENT_DETAILS"` rather than an invented number. See `config/mehua-config.json`.
+
+## Centralized configuration
+
+All client-specific values (deposit amount/method/payment details, studio location, deposit/cancellation policy wording, owner notification email, reminder timing, and the three message templates) live in one place: `config/mehua-config.json`. This is the canonical source of truth — edit it there. The n8n workflow embeds a copy of the same object in four identical "Load Mehua Config" Code nodes (one per entry point), because n8n has no clean cross-branch config include without setting up an Execute Workflow sub-node, which hasn't been done yet. **Known limitation:** those four copies must be kept in sync by hand until that's built — see `workflows/README.md`.
+
+Message templates (`deposit_request_template`, `deposit_reminder_template`, `booking_confirmation_template`) use `{{merge_field}}` placeholders filled by the workflow's own small `renderTemplate()` function, not n8n's expression engine — this keeps all wording in the config file instead of scattered across nodes. Every template is marked `TEMPORARY — OWNER WORDING TO VALIDATE` and must never be presented as Méhua's actual existing wording, and none of them are sent automatically to a real customer during Phase 1.
+
 ## Google Sheet — booking log schema
 
-One row per booking. Columns: `Booking Reference`, `Client Name`, `Service`, `Appointment Date/Time`, `Status` (New / Instructions Sent / Reminder Sent / Verified / Confirmed / Flagged), `Instructions Sent At`, `Reminder Sent At`, `Verified At`, `Verified By`, `Confirmation Sent At`, `Notes`.
+One row per booking. Columns: `Booking Reference`, `Client Name`, `Service`, `Appointment Date`, `Appointment Time`, `Status` (one of the payment status states above), `Deposit Amount`, `Payment Method`, `Deposit Request Sent At`, `Reminder Sent At`, `Proof Received At`, `Verified At`, `Verified By`, `Verification Result`, `Confirmation Sent At`, `Notes`, `Source` (`email` or `test-simulation`).
+
+## Testing
+
+`tests/mehua-lifecycle.test.js` runs the exact JavaScript from the workflow's Code nodes (extracted from `workflows/mehua-deposit-concierge.n8n.json`, not reimplemented) through a small mock of n8n's Code-node context, and walks the full lifecycle end to end: simulate a booking → compute deposit fields (asserts Rs 500 / Juice) → render the deposit request → simulate the owner reporting proof → simulate the owner verifying → render the confirmation. It asserts the placeholders (Juice payment details, studio location, deposit policy) come through honestly rather than being silently invented. Run it with `node tests/mehua-lifecycle.test.js` — no n8n instance, real inbox, real customer or real payment required. Current status: passes.
 
 ## What's still genuinely missing (`TO_VALIDATE` — not guessed, needs Joshua/Méhua)
 
-1. **A real sample Fresha booking-confirmation email** (forward one, or paste the raw text/headers) — the parsing node in the attached workflow is a placeholder until this exists. Without it, the extraction logic is a best guess at Fresha's typical format, not a tested pattern.
+1. **A real sample Fresha booking-confirmation email** (forward one, or paste the raw text/headers) — the parsing node in the attached workflow is a placeholder until this exists; `config/fresha-email-fixture.example.txt` is an explicitly fictional stand-in used only to give the parser something concrete to run against, not evidence of Fresha's real format. Without a real sample, the extraction logic is a best guess, not a tested pattern — the workflow fails safely to `NEEDS_HUMAN_REVIEW` when it can't parse required fields, rather than guessing.
 2. **How n8n reads the inbox** — Méhua's own Gmail via OAuth, an app-password IMAP connection, or a forwarding rule into a separate mailbox Joshua controls. Not decided.
-3. **Deposit amount and payment methods wording** — exact text/numbers to put in the drafted message (bank details, Juice number, amount per service). Not supplied yet.
-4. **Reminder/escalation timing** — the source docs mention "N hours" generically and "no proof after 48h" as the escalation point, but no fixed number has been confirmed with Méhua.
+3. **Juice payment details** — the actual phone number/account to put in the drafted messages. Deposit amount (Rs 500) and method (Juice) are confirmed; only the account details are missing. No number has been invented.
+4. **Studio location and deposit/cancellation policy wording** — placeholders in `config/mehua-config.json`, not yet supplied.
+5. **Reminder/escalation timing** — `reminder_escalation_hours: 48` in the config is from the source research ("no proof after 48h"), not yet confirmed directly with Méhua; the 20-hour reminder resend cooldown is our own assumption to avoid spamming the owner, not sourced from any document.
+6. **Owner notification email address** — placeholder in the config, not yet supplied.
+7. **Google Sheet ID and exact column mapping** — the workflow references a placeholder sheet ID; needs to be created and wired up once imported into a real n8n instance.
 
 ## What this prototype deliberately does NOT do
 

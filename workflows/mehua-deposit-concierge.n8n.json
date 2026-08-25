@@ -20,25 +20,61 @@
       "name": "New Fresha Booking Email",
       "type": "n8n-nodes-base.gmailTrigger",
       "typeVersion": 1,
-      "position": [
-        -420,
-        -260
-      ],
-      "notes": "TO_VALIDATE: filter query and poll interval. Needs a real sample Fresha booking-confirmation email to confirm sender address and subject pattern before this is reliable."
+      "position": [-700, -600],
+      "notes": "PROVISIONAL/TO_VALIDATE: filter query and poll interval are guesses. Needs a real sample Fresha booking-confirmation email to confirm sender address and subject pattern before this is reliable."
     },
     {
       "parameters": {
-        "jsCode": "// TO_VALIDATE: placeholder extraction logic only.\n// Rebuild these regexes against a real Fresha booking-confirmation email\n// before trusting this node. Do not use in production unvalidated.\nconst body = $input.item.json.text || $input.item.json.html || '';\nconst subject = $input.item.json.subject || '';\n\n// PLACEHOLDER patterns - guesses at a typical Fresha email format\nconst clientNameMatch = body.match(/(?:Client|Customer|Booked by)[:\\s]+([A-Za-z '-]+)/i);\nconst serviceMatch = body.match(/(?:Service|Appointment)[:\\s]+([A-Za-z0-9 ,'-]+)/i);\nconst dateTimeMatch = body.match(/(?:Date|When)[:\\s]+([A-Za-z0-9:, -]+)/i);\nconst refMatch = body.match(/(?:Booking (?:ref|reference|id))[:\\s#]+([A-Za-z0-9-]+)/i);\n\nconst clientName = clientNameMatch ? clientNameMatch[1].trim() : null;\nconst service = serviceMatch ? serviceMatch[1].trim() : null;\nconst appointmentAt = dateTimeMatch ? dateTimeMatch[1].trim() : null;\nconst bookingRef = refMatch ? refMatch[1].trim() : null;\n\nconst parseOk = Boolean(clientName && service && appointmentAt);\n\nreturn [{\n  json: {\n    clientName,\n    service,\n    appointmentAt,\n    bookingRef: bookingRef || `NOREF-${Date.now()}`,\n    subject,\n    parseOk\n  }\n}];"
+        "jsCode": "// SOURCE OF TRUTH: config/mehua-config.json — keep this object in sync with that file.\nconst config = {\n  client_id: \"mehua_lashes\",\n  business_name: \"Mehua Lashes\",\n  currency: \"MUR\",\n  deposit: {\n    required: true,\n    amount: 500,\n    method: \"Juice\",\n    payment_details: \"TO_VALIDATE_JUICE_PAYMENT_DETAILS\"\n  },\n  studio_location: \"TO_VALIDATE_STUDIO_LOCATION\",\n  deposit_policy: \"TO_VALIDATE_DEPOSIT_POLICY\",\n  cancellation_policy: \"TO_VALIDATE_CANCELLATION_POLICY\",\n  owner_notification_email: \"TO_VALIDATE_OWNER_EMAIL\",\n  reminder_escalation_hours: 48,\n  reminder_resend_cooldown_hours: 20,\n  templates: {\n    deposit_request_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}! Your appointment for {{service}} on {{booking_date}} at {{booking_time}} has been received.\\nA deposit of Rs {{deposit_amount}} via {{payment_method}} is required to secure your booking.\\n{{payment_method}} payment details: {{juice_payment_details}}\\nOnce you've made the payment, please send your payment screenshot here.\\nYour booking will only be confirmed after the payment has been manually verified.\",\n    deposit_reminder_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}, just a reminder that the Rs {{deposit_amount}} {{payment_method}} deposit for your appointment on {{booking_date}} at {{booking_time}} is still pending.\\nPayment details:\\n{{juice_payment_details}}\\nPlease send your payment screenshot after payment so the booking can be verified.\",\n    booking_confirmation_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}, your Rs {{deposit_amount}} deposit has been manually verified and your booking is now confirmed for {{booking_date}} at {{booking_time}}.\\nLocation:\\n{{studio_location}}\\nBooking/deposit policy:\\n{{deposit_policy}}\\nSee you soon!\"\n  }\n};\n\nreturn $input.all().map(item => ({ json: { ...item.json, config } }));"
       },
-      "id": "parse-booking-01",
-      "name": "Parse Booking Details",
+      "id": "config-email-01",
+      "name": "Load Mehua Config (Email Path)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        -180,
-        -260
-      ],
-      "notes": "TO_VALIDATE: this regex/extraction logic is a placeholder guess at Fresha's email format (client name, service, date/time, booking reference). Must be rebuilt against a real sample email before this node can be trusted."
+      "position": [-440, -600],
+      "notes": "Centralized config, embedded here because n8n has no cross-branch config include without an Execute Workflow sub-node (not set up yet). Keep in sync with config/mehua-config.json — see workflows/README.md."
+    },
+    {
+      "parameters": {
+        "jsCode": "// PROVISIONAL / TO_VALIDATE: placeholder extraction logic only — a guess at\n// Fresha's email format. Rebuild against a real Fresha booking-confirmation\n// email (see config/fresha-email-fixture.example.txt, which is FICTIONAL,\n// not real) before trusting this node. Fails safely: parseOk=false routes to\n// the NEEDS_HUMAN_REVIEW branch instead of guessing.\nconst item = $input.item.json;\nconst config = item.config;\nconst body = item.text || item.html || '';\nconst subject = item.subject || '';\n\nconst clientNameMatch = body.match(/(?:Client|Customer|Booked by)[:\\s]+([A-Za-z '-]+)/i);\nconst serviceMatch = body.match(/(?:Service|Appointment)[:\\s]+([A-Za-z0-9 ,'-]+)/i);\nconst dateMatch = body.match(/(?:Date|When)[:\\s]+(\\d{4}-\\d{2}-\\d{2})/i);\nconst timeMatch = body.match(/(\\d{1,2}:\\d{2})/);\nconst refMatch = body.match(/(?:Booking (?:ref|reference|id))[:\\s#]+([A-Za-z0-9-]+)/i);\n\nconst clientName = clientNameMatch ? clientNameMatch[1].trim() : null;\nconst service = serviceMatch ? serviceMatch[1].trim() : null;\nconst bookingDate = dateMatch ? dateMatch[1].trim() : null;\nconst bookingTime = timeMatch ? timeMatch[1].trim() : null;\nconst bookingRef = refMatch ? refMatch[1].trim() : null;\n\nconst parseOk = Boolean(clientName && service && bookingDate && bookingTime);\n\nreturn [{\n  json: {\n    config,\n    clientName,\n    service,\n    bookingDate,\n    bookingTime,\n    bookingRef: bookingRef || `NOREF-${Date.now()}`,\n    subject,\n    parseOk,\n    source: 'email'\n  }\n}];"
+      },
+      "id": "parse-booking-01",
+      "name": "Parse Booking Details (PROVISIONAL)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-180, -600],
+      "notes": "TO_VALIDATE: needs a real Fresha email. Required fields missing => parseOk=false => fails safely to NEEDS_HUMAN_REVIEW, never guesses a booking into existence."
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger-test-01",
+      "name": "TEST - Simulate New Booking (Dev Only)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-700, -380],
+      "notes": "Run this manually to exercise the full lifecycle without a real Gmail inbox, real Fresha email, real customer, real Juice transaction or real WhatsApp account."
+    },
+    {
+      "parameters": {
+        "jsCode": "// SOURCE OF TRUTH: config/mehua-config.json — keep this object in sync with that file.\nconst config = {\n  client_id: \"mehua_lashes\",\n  business_name: \"Mehua Lashes\",\n  currency: \"MUR\",\n  deposit: {\n    required: true,\n    amount: 500,\n    method: \"Juice\",\n    payment_details: \"TO_VALIDATE_JUICE_PAYMENT_DETAILS\"\n  },\n  studio_location: \"TO_VALIDATE_STUDIO_LOCATION\",\n  deposit_policy: \"TO_VALIDATE_DEPOSIT_POLICY\",\n  cancellation_policy: \"TO_VALIDATE_CANCELLATION_POLICY\",\n  owner_notification_email: \"TO_VALIDATE_OWNER_EMAIL\",\n  reminder_escalation_hours: 48,\n  reminder_resend_cooldown_hours: 20,\n  templates: {\n    deposit_request_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}! Your appointment for {{service}} on {{booking_date}} at {{booking_time}} has been received.\\nA deposit of Rs {{deposit_amount}} via {{payment_method}} is required to secure your booking.\\n{{payment_method}} payment details: {{juice_payment_details}}\\nOnce you've made the payment, please send your payment screenshot here.\\nYour booking will only be confirmed after the payment has been manually verified.\",\n    deposit_reminder_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}, just a reminder that the Rs {{deposit_amount}} {{payment_method}} deposit for your appointment on {{booking_date}} at {{booking_time}} is still pending.\\nPayment details:\\n{{juice_payment_details}}\\nPlease send your payment screenshot after payment so the booking can be verified.\",\n    booking_confirmation_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}, your Rs {{deposit_amount}} deposit has been manually verified and your booking is now confirmed for {{booking_date}} at {{booking_time}}.\\nLocation:\\n{{studio_location}}\\nBooking/deposit policy:\\n{{deposit_policy}}\\nSee you soon!\"\n  }\n};\n\nreturn $input.all().map(item => ({ json: { ...item.json, config } }));"
+      },
+      "id": "config-test-01",
+      "name": "Load Mehua Config (Test Path)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-440, -380],
+      "notes": "Duplicate of Load Mehua Config (Email Path) — see that node's notes. Keep in sync with config/mehua-config.json."
+    },
+    {
+      "parameters": {
+        "jsCode": "// TEST FIXTURE ONLY — never a real customer, real Juice transaction, real Gmail\n// inbox or real WhatsApp account. See config/mehua-config.json test_scenario\n// for the documented scenario this mirrors.\nconst item = $input.item.json;\nconst config = item.config;\n\nconst futureDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000); // 3 days from now\nconst bookingDate = futureDate.toISOString().slice(0, 10);\n\nreturn [{\n  json: {\n    config,\n    clientName: \"Test Customer\",\n    service: \"Classic Full Set\",\n    bookingDate,\n    bookingTime: \"10:00\",\n    bookingRef: `TEST-${Date.now()}`,\n    subject: \"[TEST] Simulated booking\",\n    parseOk: true,\n    source: 'test-simulation'\n  }\n}];"
+      },
+      "id": "inject-test-data-01",
+      "name": "Inject Simulated Booking Data (TEST)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-180, -380],
+      "notes": "Deposit required = Rs 500 via Juice, initial status AWAITING_DEPOSIT, per the confirmed deposit rule."
     },
     {
       "parameters": {
@@ -55,99 +91,101 @@
       "name": "Parsed OK?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [
-        60,
-        -260
-      ]
+      "position": [80, -490]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.item.json;\nconst config = item.config;\n\nreturn [{\n  json: {\n    ...item,\n    status: \"AWAITING_DEPOSIT\",\n    depositAmount: config.deposit.amount,\n    paymentMethod: config.deposit.method,\n    juicePaymentDetails: config.deposit.payment_details\n  }\n}];"
+      },
+      "id": "compute-deposit-fields-01",
+      "name": "Compute Deposit Fields",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [340, -600],
+      "notes": "CONFIRMED: deposit_amount_mur=500, payment_method=Juice. juicePaymentDetails is still TO_VALIDATE_JUICE_PAYMENT_DETAILS."
     },
     {
       "parameters": {
         "operation": "append",
         "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:L",
+        "range": "Booking Log!A:Q",
         "options": {}
       },
       "id": "log-new-booking-01",
-      "name": "Log New Booking",
+      "name": "Log New Booking (AWAITING_DEPOSIT)",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [
-        320,
-        -360
-      ],
-      "notes": "Append row: Booking Reference, Client Name, Service, Appointment Date/Time, Status=New, Instructions Sent At, Reminder Sent At, Verified At, Verified By, Confirmation Sent At, Notes."
+      "position": [600, -600],
+      "notes": "Append row: Booking Reference, Client Name, Service, Appointment Date, Appointment Time, Status, Deposit Amount, Payment Method, Deposit Request Sent At, Reminder Sent At, Proof Received At, Verified At, Verified By, Verification Result, Confirmation Sent At, Notes, Source. TO_VALIDATE: real Sheet ID needed post-import."
     },
     {
       "parameters": {
-        "values": {
-          "string": [
-            {
-              "name": "depositMessageDraft",
-              "value": "=Hi {{$json[\"clientName\"]}}! Thanks for booking {{$json[\"service\"]}} with Mehua Lashes on {{$json[\"appointmentAt\"]}}. To confirm your slot, please send your deposit of [AMOUNT_TO_VALIDATE] via Juice/bank transfer to [DETAILS_TO_VALIDATE], and reply here with a screenshot. Booking ref: {{$json[\"bookingRef\"]}}"
-            }
-          ]
-        },
-        "options": {}
+        "jsCode": "// Uses config.templates.deposit_request_template — see config/mehua-config.json.\nfunction renderTemplate(template, data) {\n  return template.replace(/{{\\s*([a-zA-Z0-9_]+)\\s*}}/g, (_, key) => {\n    return (data[key] !== undefined && data[key] !== null) ? data[key] : `{{${key}}}`;\n  });\n}\n\nconst item = $input.item.json;\nconst config = item.config;\n\nconst data = {\n  customer_name: item.clientName,\n  service: item.service,\n  booking_date: item.bookingDate,\n  booking_time: item.bookingTime,\n  deposit_amount: item.depositAmount,\n  payment_method: item.paymentMethod,\n  juice_payment_details: item.juicePaymentDetails\n};\n\nconst messageDraft = renderTemplate(config.templates.deposit_request_template, data);\n\nreturn [{ json: { ...item, messageDraft } }];"
       },
-      "id": "draft-deposit-msg-01",
-      "name": "Draft Deposit Instructions",
-      "type": "n8n-nodes-base.set",
+      "id": "render-deposit-request-01",
+      "name": "Render Deposit Request Message",
+      "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        560,
-        -360
-      ],
-      "notes": "TO_VALIDATE: deposit amount and payment details are placeholders. Message text is a draft the owner sends manually via WhatsApp - n8n does not send WhatsApp directly on the free Business App tier."
+      "position": [860, -600],
+      "notes": "TEMPORARY — OWNER WORDING TO VALIDATE. Do not present as Mehua's existing wording."
     },
     {
       "parameters": {
-        "sendTo": "PLACEHOLDER_OWNER_EMAIL",
-        "subject": "=New booking - send deposit instructions to {{$json[\"clientName\"]}}",
-        "message": "={{$json[\"depositMessageDraft\"]}}",
+        "sendTo": "={{$json.config.owner_notification_email}}",
+        "subject": "=New booking - send deposit instructions to {{$json.clientName}}",
+        "message": "={{$json.messageDraft}}",
         "options": {}
       },
       "id": "notify-owner-deposit-01",
       "name": "Notify Owner - Deposit Instructions",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2,
-      "position": [
-        800,
-        -360
-      ],
-      "notes": "Sends the drafted WhatsApp text to the owner's own inbox so she can copy-paste and send it herself. Replace with WhatsApp/Telegram notification if the owner prefers, once decided."
+      "position": [1120, -600],
+      "notes": "Sends the drafted WhatsApp text to the owner's own inbox so she can copy-paste and send it herself. n8n does not send WhatsApp directly on the free Business App tier."
     },
     {
       "parameters": {
         "operation": "update",
         "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:L",
+        "range": "Booking Log!A:Q",
+        "columnToMatchOn": "Booking Reference",
+        "valueToMatchOn": "={{$json.bookingRef}}",
         "options": {}
       },
-      "id": "update-status-instr-sent-01",
-      "name": "Update Status - Instructions Sent",
+      "id": "update-deposit-sent-01",
+      "name": "Update - Deposit Request Sent At",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [
-        1040,
-        -360
-      ]
+      "position": [1380, -600],
+      "notes": "Sets Deposit Request Sent At = now. Status stays AWAITING_DEPOSIT."
     },
     {
       "parameters": {
-        "sendTo": "PLACEHOLDER_OWNER_EMAIL",
+        "operation": "append",
+        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
+        "range": "Booking Log!A:Q",
+        "options": {}
+      },
+      "id": "log-unparseable-01",
+      "name": "Log Unparseable Booking (NEEDS_HUMAN_REVIEW)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [340, -380],
+      "notes": "Error handling: fail safely, never guess. Status = NEEDS_HUMAN_REVIEW, Notes = raw subject."
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$json.config.owner_notification_email}}",
         "subject": "=Booking email could not be parsed - please check",
-        "message": "=A Fresha booking email arrived but could not be automatically parsed. Please check it manually and log the booking. Raw subject: {{$json[\"subject\"]}}",
+        "message": "=A Fresha booking email arrived but could not be automatically parsed (fields missing). It has been logged as NEEDS_HUMAN_REVIEW. Please check it manually. Raw subject: {{$json.subject}}",
         "options": {}
       },
       "id": "notify-owner-parse-fail-01",
       "name": "Notify Owner - Unparseable Booking Email",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2,
-      "position": [
-        320,
-        -160
-      ],
-      "notes": "Error handling: never fail silently. Flags the row for manual follow-up instead."
+      "position": [600, -380],
+      "notes": "Never fails silently."
     },
     {
       "parameters": {
@@ -164,77 +202,124 @@
       "name": "Every 4 Hours - Check Overdue Deposits",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1,
-      "position": [
-        -420,
-        140
-      ]
+      "position": [-700, -40]
+    },
+    {
+      "parameters": {
+        "jsCode": "// SOURCE OF TRUTH: config/mehua-config.json — keep this object in sync with that file.\nconst config = {\n  client_id: \"mehua_lashes\",\n  business_name: \"Mehua Lashes\",\n  currency: \"MUR\",\n  deposit: {\n    required: true,\n    amount: 500,\n    method: \"Juice\",\n    payment_details: \"TO_VALIDATE_JUICE_PAYMENT_DETAILS\"\n  },\n  studio_location: \"TO_VALIDATE_STUDIO_LOCATION\",\n  deposit_policy: \"TO_VALIDATE_DEPOSIT_POLICY\",\n  cancellation_policy: \"TO_VALIDATE_CANCELLATION_POLICY\",\n  owner_notification_email: \"TO_VALIDATE_OWNER_EMAIL\",\n  reminder_escalation_hours: 48,\n  reminder_resend_cooldown_hours: 20,\n  templates: {\n    deposit_request_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}! Your appointment for {{service}} on {{booking_date}} at {{booking_time}} has been received.\\nA deposit of Rs {{deposit_amount}} via {{payment_method}} is required to secure your booking.\\n{{payment_method}} payment details: {{juice_payment_details}}\\nOnce you've made the payment, please send your payment screenshot here.\\nYour booking will only be confirmed after the payment has been manually verified.\",\n    deposit_reminder_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}, just a reminder that the Rs {{deposit_amount}} {{payment_method}} deposit for your appointment on {{booking_date}} at {{booking_time}} is still pending.\\nPayment details:\\n{{juice_payment_details}}\\nPlease send your payment screenshot after payment so the booking can be verified.\",\n    booking_confirmation_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}, your Rs {{deposit_amount}} deposit has been manually verified and your booking is now confirmed for {{booking_date}} at {{booking_time}}.\\nLocation:\\n{{studio_location}}\\nBooking/deposit policy:\\n{{deposit_policy}}\\nSee you soon!\"\n  }\n};\n\nreturn $input.all().map(item => ({ json: { ...item.json, config } }));"
+      },
+      "id": "config-overdue-01",
+      "name": "Load Mehua Config (Overdue Path)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-440, -40],
+      "notes": "Duplicate of Load Mehua Config (Email Path) — see that node's notes. Keep in sync with config/mehua-config.json."
     },
     {
       "parameters": {
         "operation": "read",
         "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:L",
+        "range": "Booking Log!A:Q",
         "options": {}
       },
       "id": "read-sheet-overdue-01",
       "name": "Read Booking Log",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [
-        -180,
-        140
-      ]
+      "position": [-180, -40]
     },
     {
       "parameters": {
-        "jsCode": "// TO_VALIDATE: 48h escalation window is from the source research,\n// not yet confirmed directly with the owner - adjust ESCALATION_HOURS once she confirms.\nconst ESCALATION_HOURS = 48;\nconst now = new Date();\n\nconst overdue = $input.all().filter(item => {\n  const status = item.json['Status'];\n  const sentAt = item.json['Instructions Sent At'];\n  if (!sentAt) return false;\n  if (status !== 'Instructions Sent' && status !== 'Reminder Sent') return false;\n  const hoursSince = (now - new Date(sentAt)) / (1000 * 60 * 60);\n  return hoursSince >= ESCALATION_HOURS;\n});\n\nreturn overdue;"
+        "jsCode": "// TO_VALIDATE: reminder_escalation_hours / reminder_resend_cooldown_hours are\n// placeholders — see config/mehua-config.json. Escalates status to OVERDUE\n// only after the escalation window; never auto-verifies or auto-cancels.\nconst configItem = $('Load Mehua Config (Overdue Path)').first().json.config;\nconst escalationHours = configItem.reminder_escalation_hours;\nconst cooldownHours = configItem.reminder_resend_cooldown_hours;\nconst now = new Date();\n\nconst dueForReminder = $input.all().filter(item => {\n  const status = item.json['Status'];\n  const sentAt = item.json['Deposit Request Sent At'];\n  const lastReminderAt = item.json['Reminder Sent At'];\n  if (!sentAt) return false;\n  if (status !== 'AWAITING_DEPOSIT' && status !== 'OVERDUE') return false;\n  const hoursSinceSent = (now - new Date(sentAt)) / (1000 * 60 * 60);\n  if (hoursSinceSent < escalationHours) return false;\n  if (lastReminderAt) {\n    const hoursSinceReminder = (now - new Date(lastReminderAt)) / (1000 * 60 * 60);\n    if (hoursSinceReminder < cooldownHours) return false;\n  }\n  return true;\n});\n\nreturn dueForReminder.map(item => ({ json: { ...item.json, config: configItem } }));"
       },
       "id": "filter-overdue-01",
-      "name": "Filter Rows Overdue (>48h, not verified)",
+      "name": "Filter Rows Needing Reminder (OVERDUE)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        60,
-        140
-      ],
-      "notes": "TO_VALIDATE: 48h escalation window is from the source research, not yet confirmed with the owner. Filters rows where Status is Instructions Sent/Reminder Sent and hours since Instructions Sent At exceeds the window."
+      "position": [80, -40]
     },
     {
       "parameters": {
-        "sendTo": "PLACEHOLDER_OWNER_EMAIL",
-        "subject": "=Reminder needed - deposit still pending for {{$json[\"clientName\"]}}",
-        "message": "=No deposit confirmation logged yet for booking {{$json[\"bookingRef\"]}}. Suggested reminder to send: Hi {{$json[\"clientName\"]}}, just a friendly reminder to send your deposit to confirm your {{$json[\"service\"]}} appointment on {{$json[\"appointmentAt\"]}}.",
+        "jsCode": "function renderTemplate(template, data) {\n  return template.replace(/{{\\s*([a-zA-Z0-9_]+)\\s*}}/g, (_, key) => {\n    return (data[key] !== undefined && data[key] !== null) ? data[key] : `{{${key}}}`;\n  });\n}\n\nconst item = $input.item.json;\nconst config = item.config;\n\nconst data = {\n  customer_name: item['Client Name'],\n  booking_date: item['Appointment Date'],\n  booking_time: item['Appointment Time'],\n  deposit_amount: item['Deposit Amount'],\n  payment_method: item['Payment Method'],\n  juice_payment_details: config.deposit.payment_details\n};\n\nconst messageDraft = renderTemplate(config.templates.deposit_reminder_template, data);\n\nreturn [{ json: { ...item, messageDraft } }];"
+      },
+      "id": "render-reminder-01",
+      "name": "Render Deposit Reminder Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [340, -40],
+      "notes": "TEMPORARY — OWNER WORDING TO VALIDATE. Do not send automatically to a real customer during Phase 1 — this drafts a message for the owner, it does not send WhatsApp."
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$json.config.owner_notification_email}}",
+        "subject": "=Reminder needed - deposit still pending for {{$json[\"Client Name\"]}}",
+        "message": "={{$json.messageDraft}}",
         "options": {}
       },
       "id": "notify-owner-reminder-01",
       "name": "Notify Owner - Reminder Draft",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2,
-      "position": [
-        320,
-        140
-      ]
+      "position": [600, -40]
     },
     {
       "parameters": {
         "operation": "update",
         "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:L",
+        "range": "Booking Log!A:Q",
+        "columnToMatchOn": "Booking Reference",
+        "valueToMatchOn": "={{$json[\"Booking Reference\"]}}",
         "options": {}
       },
-      "id": "update-status-reminder-sent-01",
-      "name": "Update Status - Reminder Sent",
+      "id": "update-status-overdue-01",
+      "name": "Update Status - OVERDUE",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [
-        560,
-        140
-      ]
+      "position": [860, -40],
+      "notes": "Sets Status=OVERDUE, Reminder Sent At=now. Only a human action can move a booking out of OVERDUE (via the verification form) or resolve it manually - this node never cancels a booking."
     },
     {
       "parameters": {
-        "formTitle": "Mark Deposit Verified - Mehua Lashes",
-        "formDescription": "Owner-only: use after checking the bank/Juice statement yourself. Never mark verified without checking.",
+        "formTitle": "Report Deposit Proof Received - Mehua Lashes",
+        "formDescription": "Owner-only: submit this when a client sends you a WhatsApp payment screenshot. This does NOT verify the deposit — it only flags the booking for manual verification against your Juice/bank statement.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Booking Reference",
+              "fieldType": "text",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "form-trigger-proof-01",
+      "name": "Owner Form - Report Proof Received",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 1,
+      "position": [-700, 260],
+      "notes": "IMPORTANT: receiving a screenshot does NOT mean the deposit is paid. This only moves the booking to AWAITING_MANUAL_VERIFICATION - never DEPOSIT_VERIFIED. No OCR/AI/screenshot analysis is used anywhere in this workflow."
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
+        "range": "Booking Log!A:Q",
+        "columnToMatchOn": "Booking Reference",
+        "valueToMatchOn": "={{$json[\"Booking Reference\"]}}",
+        "options": {}
+      },
+      "id": "update-awaiting-verification-01",
+      "name": "Update Status - AWAITING_MANUAL_VERIFICATION",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [-440, 260],
+      "notes": "Sets Status=AWAITING_MANUAL_VERIFICATION, Proof Received At=now. PROOF_RECEIVED is logged as this timestamp rather than a separate durable status, since nothing else happens between the two in this flow - see docs/mehua-deposit-concierge-spec.md."
+    },
+    {
+      "parameters": {
+        "formTitle": "Review Deposit Verification - Mehua Lashes",
+        "formDescription": "Owner-only: use this ONLY after checking your Juice/bank statement yourself. This is the single point in the whole system where a deposit can be marked verified or rejected - no automated step can do this.",
         "formFields": {
           "values": [
             {
@@ -246,226 +331,228 @@
               "fieldLabel": "Verified By",
               "fieldType": "text",
               "requiredField": true
+            },
+            {
+              "fieldLabel": "Verification Result",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  { "option": "Verified" },
+                  { "option": "Rejected" }
+                ]
+              },
+              "requiredField": true
             }
           ]
         },
         "options": {}
       },
       "id": "form-trigger-verify-01",
-      "name": "Owner Form - Mark Deposit Verified",
+      "name": "Owner Form - Review Deposit Verification",
       "type": "n8n-nodes-base.formTrigger",
       "typeVersion": 1,
-      "position": [
-        -420,
-        460
-      ],
-      "notes": "Human-in-the-loop checkpoint. The owner is the only one who submits this, only after checking the bank/Juice statement herself. This is intentionally the single point where automatic 'verified' status is impossible."
+      "position": [-700, 520],
+      "notes": "Human-in-the-loop checkpoint. No OCR, AI model, screenshot analysis or text recognition may ever set DEPOSIT_VERIFIED - only this explicit owner action."
+    },
+    {
+      "parameters": {
+        "jsCode": "// SOURCE OF TRUTH: config/mehua-config.json — keep this object in sync with that file.\nconst config = {\n  client_id: \"mehua_lashes\",\n  business_name: \"Mehua Lashes\",\n  currency: \"MUR\",\n  deposit: {\n    required: true,\n    amount: 500,\n    method: \"Juice\",\n    payment_details: \"TO_VALIDATE_JUICE_PAYMENT_DETAILS\"\n  },\n  studio_location: \"TO_VALIDATE_STUDIO_LOCATION\",\n  deposit_policy: \"TO_VALIDATE_DEPOSIT_POLICY\",\n  cancellation_policy: \"TO_VALIDATE_CANCELLATION_POLICY\",\n  owner_notification_email: \"TO_VALIDATE_OWNER_EMAIL\",\n  reminder_escalation_hours: 48,\n  reminder_resend_cooldown_hours: 20,\n  templates: {\n    deposit_request_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}! Your appointment for {{service}} on {{booking_date}} at {{booking_time}} has been received.\\nA deposit of Rs {{deposit_amount}} via {{payment_method}} is required to secure your booking.\\n{{payment_method}} payment details: {{juice_payment_details}}\\nOnce you've made the payment, please send your payment screenshot here.\\nYour booking will only be confirmed after the payment has been manually verified.\",\n    deposit_reminder_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}, just a reminder that the Rs {{deposit_amount}} {{payment_method}} deposit for your appointment on {{booking_date}} at {{booking_time}} is still pending.\\nPayment details:\\n{{juice_payment_details}}\\nPlease send your payment screenshot after payment so the booking can be verified.\",\n    booking_confirmation_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}, your Rs {{deposit_amount}} deposit has been manually verified and your booking is now confirmed for {{booking_date}} at {{booking_time}}.\\nLocation:\\n{{studio_location}}\\nBooking/deposit policy:\\n{{deposit_policy}}\\nSee you soon!\"\n  }\n};\n\nreturn $input.all().map(item => ({ json: { ...item.json, config } }));"
+      },
+      "id": "config-verify-01",
+      "name": "Load Mehua Config (Verify Path)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-440, 520],
+      "notes": "Duplicate of Load Mehua Config (Email Path) — see that node's notes. Keep in sync with config/mehua-config.json."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json[\"Verification Result\"]}}",
+              "value2": "Verified"
+            }
+          ]
+        }
+      },
+      "id": "if-verified-01",
+      "name": "Verification Result = Verified?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [-180, 520]
     },
     {
       "parameters": {
         "operation": "update",
         "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:L",
+        "range": "Booking Log!A:Q",
+        "columnToMatchOn": "Booking Reference",
+        "valueToMatchOn": "={{$json[\"Booking Reference\"]}}",
         "options": {}
       },
       "id": "update-verified-01",
-      "name": "Update Status - Verified",
+      "name": "Update Status - DEPOSIT_VERIFIED",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [
-        -180,
-        460
-      ]
+      "position": [80, 440],
+      "notes": "Sets Status=DEPOSIT_VERIFIED, Verified At=now, Verified By={{$json['Verified By']}}, Verification Result=Verified. This is the ONLY node in the whole workflow that can set DEPOSIT_VERIFIED, and it only runs after an explicit owner form submission."
     },
     {
       "parameters": {
-        "values": {
-          "string": [
-            {
-              "name": "confirmationMessageDraft",
-              "value": "=Hi {{$json[\"clientName\"]}}, your deposit is confirmed! Your {{$json[\"service\"]}} appointment is booked for {{$json[\"appointmentAt\"]}}. [POLICY_TEXT_TO_VALIDATE] [LOCATION_TEXT_TO_VALIDATE] See you soon!"
-            }
-          ]
+        "operation": "read",
+        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
+        "range": "Booking Log!A:Q",
+        "filters": {
+          "columnToMatchOn": "Booking Reference"
         },
         "options": {}
       },
-      "id": "draft-confirmation-01",
-      "name": "Draft Final Confirmation",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 2,
-      "position": [
-        60,
-        460
-      ],
-      "notes": "TO_VALIDATE: exact policy and location wording not yet supplied."
+      "id": "read-verified-row-01",
+      "name": "Read Verified Row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [340, 440],
+      "notes": "Re-fetches the full row (client name, service, date/time) to render the confirmation message, since the verification form only collects the booking reference."
     },
     {
       "parameters": {
-        "sendTo": "PLACEHOLDER_OWNER_EMAIL",
-        "subject": "=Send confirmation to {{$json[\"clientName\"]}}",
-        "message": "={{$json[\"confirmationMessageDraft\"]}}",
+        "jsCode": "function renderTemplate(template, data) {\n  return template.replace(/{{\\s*([a-zA-Z0-9_]+)\\s*}}/g, (_, key) => {\n    return (data[key] !== undefined && data[key] !== null) ? data[key] : `{{${key}}}`;\n  });\n}\n\nconst item = $input.item.json;\nconst config = $('Load Mehua Config (Verify Path)').first().json.config;\n\nconst data = {\n  customer_name: item['Client Name'],\n  booking_date: item['Appointment Date'],\n  booking_time: item['Appointment Time'],\n  deposit_amount: item['Deposit Amount'],\n  studio_location: config.studio_location,\n  deposit_policy: config.deposit_policy\n};\n\nconst messageDraft = renderTemplate(config.templates.booking_confirmation_template, data);\n\nreturn [{ json: { ...item, config, messageDraft } }];"
+      },
+      "id": "render-confirmation-01",
+      "name": "Render Confirmation Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [600, 440],
+      "notes": "TEMPORARY — OWNER WORDING TO VALIDATE. studio_location and deposit_policy are still TO_VALIDATE placeholders."
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$json.config.owner_notification_email}}",
+        "subject": "=Send confirmation to {{$json[\"Client Name\"]}}",
+        "message": "={{$json.messageDraft}}",
         "options": {}
       },
       "id": "notify-owner-confirmation-01",
       "name": "Notify Owner - Final Confirmation",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2,
-      "position": [
-        320,
-        460
-      ]
+      "position": [860, 440]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
+        "range": "Booking Log!A:Q",
+        "columnToMatchOn": "Booking Reference",
+        "valueToMatchOn": "={{$json[\"Booking Reference\"]}}",
+        "options": {}
+      },
+      "id": "update-rejected-01",
+      "name": "Update Status - DEPOSIT_REJECTED",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [80, 620],
+      "notes": "Sets Status=DEPOSIT_REJECTED, Verification Result=Rejected, Verified By, Verified At=now. No automated message is sent to the client on rejection - this needs the owner's direct, human follow-up (payment mismatch, wrong amount, etc. all need judgement)."
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$json.config.owner_notification_email}}",
+        "subject": "=Deposit rejected for {{$json[\"Booking Reference\"]}} - needs your follow-up",
+        "message": "=You marked the deposit for booking {{$json[\"Booking Reference\"]}} as Rejected. No message has been sent to the client - please follow up with them directly.",
+        "options": {}
+      },
+      "id": "notify-owner-rejected-01",
+      "name": "Notify Owner - Deposit Rejected",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [340, 620]
     }
   ],
   "connections": {
     "New Fresha Booking Email": {
-      "main": [
-        [
-          {
-            "node": "Parse Booking Details",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Load Mehua Config (Email Path)", "type": "main", "index": 0 }]]
     },
-    "Parse Booking Details": {
-      "main": [
-        [
-          {
-            "node": "Parsed OK?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Load Mehua Config (Email Path)": {
+      "main": [[{ "node": "Parse Booking Details (PROVISIONAL)", "type": "main", "index": 0 }]]
+    },
+    "Parse Booking Details (PROVISIONAL)": {
+      "main": [[{ "node": "Parsed OK?", "type": "main", "index": 0 }]]
+    },
+    "TEST - Simulate New Booking (Dev Only)": {
+      "main": [[{ "node": "Load Mehua Config (Test Path)", "type": "main", "index": 0 }]]
+    },
+    "Load Mehua Config (Test Path)": {
+      "main": [[{ "node": "Inject Simulated Booking Data (TEST)", "type": "main", "index": 0 }]]
+    },
+    "Inject Simulated Booking Data (TEST)": {
+      "main": [[{ "node": "Parsed OK?", "type": "main", "index": 0 }]]
     },
     "Parsed OK?": {
       "main": [
-        [
-          {
-            "node": "Log New Booking",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Notify Owner - Unparseable Booking Email",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Compute Deposit Fields", "type": "main", "index": 0 }],
+        [{ "node": "Log Unparseable Booking (NEEDS_HUMAN_REVIEW)", "type": "main", "index": 0 }]
       ]
     },
-    "Log New Booking": {
-      "main": [
-        [
-          {
-            "node": "Draft Deposit Instructions",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Compute Deposit Fields": {
+      "main": [[{ "node": "Log New Booking (AWAITING_DEPOSIT)", "type": "main", "index": 0 }]]
     },
-    "Draft Deposit Instructions": {
-      "main": [
-        [
-          {
-            "node": "Notify Owner - Deposit Instructions",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Log New Booking (AWAITING_DEPOSIT)": {
+      "main": [[{ "node": "Render Deposit Request Message", "type": "main", "index": 0 }]]
+    },
+    "Render Deposit Request Message": {
+      "main": [[{ "node": "Notify Owner - Deposit Instructions", "type": "main", "index": 0 }]]
     },
     "Notify Owner - Deposit Instructions": {
-      "main": [
-        [
-          {
-            "node": "Update Status - Instructions Sent",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Update - Deposit Request Sent At", "type": "main", "index": 0 }]]
+    },
+    "Log Unparseable Booking (NEEDS_HUMAN_REVIEW)": {
+      "main": [[{ "node": "Notify Owner - Unparseable Booking Email", "type": "main", "index": 0 }]]
     },
     "Every 4 Hours - Check Overdue Deposits": {
-      "main": [
-        [
-          {
-            "node": "Read Booking Log",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Load Mehua Config (Overdue Path)", "type": "main", "index": 0 }]]
+    },
+    "Load Mehua Config (Overdue Path)": {
+      "main": [[{ "node": "Read Booking Log", "type": "main", "index": 0 }]]
     },
     "Read Booking Log": {
-      "main": [
-        [
-          {
-            "node": "Filter Rows Overdue (>48h, not verified)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Filter Rows Needing Reminder (OVERDUE)", "type": "main", "index": 0 }]]
     },
-    "Filter Rows Overdue (>48h, not verified)": {
-      "main": [
-        [
-          {
-            "node": "Notify Owner - Reminder Draft",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Filter Rows Needing Reminder (OVERDUE)": {
+      "main": [[{ "node": "Render Deposit Reminder Message", "type": "main", "index": 0 }]]
+    },
+    "Render Deposit Reminder Message": {
+      "main": [[{ "node": "Notify Owner - Reminder Draft", "type": "main", "index": 0 }]]
     },
     "Notify Owner - Reminder Draft": {
+      "main": [[{ "node": "Update Status - OVERDUE", "type": "main", "index": 0 }]]
+    },
+    "Owner Form - Report Proof Received": {
+      "main": [[{ "node": "Update Status - AWAITING_MANUAL_VERIFICATION", "type": "main", "index": 0 }]]
+    },
+    "Owner Form - Review Deposit Verification": {
+      "main": [[{ "node": "Load Mehua Config (Verify Path)", "type": "main", "index": 0 }]]
+    },
+    "Load Mehua Config (Verify Path)": {
+      "main": [[{ "node": "Verification Result = Verified?", "type": "main", "index": 0 }]]
+    },
+    "Verification Result = Verified?": {
       "main": [
-        [
-          {
-            "node": "Update Status - Reminder Sent",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Update Status - DEPOSIT_VERIFIED", "type": "main", "index": 0 }],
+        [{ "node": "Update Status - DEPOSIT_REJECTED", "type": "main", "index": 0 }]
       ]
     },
-    "Owner Form - Mark Deposit Verified": {
-      "main": [
-        [
-          {
-            "node": "Update Status - Verified",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Update Status - DEPOSIT_VERIFIED": {
+      "main": [[{ "node": "Read Verified Row", "type": "main", "index": 0 }]]
     },
-    "Update Status - Verified": {
-      "main": [
-        [
-          {
-            "node": "Draft Final Confirmation",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Read Verified Row": {
+      "main": [[{ "node": "Render Confirmation Message", "type": "main", "index": 0 }]]
     },
-    "Draft Final Confirmation": {
-      "main": [
-        [
-          {
-            "node": "Notify Owner - Final Confirmation",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Render Confirmation Message": {
+      "main": [[{ "node": "Notify Owner - Final Confirmation", "type": "main", "index": 0 }]]
+    },
+    "Update Status - DEPOSIT_REJECTED": {
+      "main": [[{ "node": "Notify Owner - Deposit Rejected", "type": "main", "index": 0 }]]
     }
   },
   "active": false,
@@ -474,6 +561,6 @@
   },
   "pinData": {},
   "meta": {
-    "note": "Prototype scaffold, not yet validated against a live n8n instance or real Fresha email. See workflows/README.md and docs/mehua-deposit-concierge-spec.md before relying on this. Every node marked TO_VALIDATE needs real input from Joshua/Mehua before this is trustworthy."
+    "note": "Prototype scaffold, not yet validated against a live n8n instance or a real Fresha email. See workflows/README.md and docs/mehua-deposit-concierge-spec.md. Every TO_VALIDATE item needs real input from Joshua/Mehua before this is trustworthy. Deposit amount (Rs 500) and payment method (Juice) ARE confirmed - only the Juice account details, message wording, policy text, studio location and Fresha email format remain placeholders."
   }
 }
