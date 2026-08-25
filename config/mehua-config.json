@@ -8,8 +8,8 @@
     "required": true,
     "amount": 500,
     "method": "Juice",
-    "payment_details": "TO_VALIDATE_JUICE_PAYMENT_DETAILS",
-    "_status": "CONFIRMED: amount=500 MUR, method=Juice. payment_details is a placeholder — do not invent a phone number/account."
+    "payment_details": "5902 8505 (MCB Juice)",
+    "_status": "CONFIRMED: amount=500 MUR, method=Juice, payment_details=5902 8505 (MCB Juice) — provided directly by Joshua. This is the existing manual Juice number already given out to customers; not a secret/PIN/OTP. Keep this file private (already git-ignored from any public sync) but it is fine to be present in this private repo."
   },
 
   "studio_location": "TO_VALIDATE_STUDIO_LOCATION",

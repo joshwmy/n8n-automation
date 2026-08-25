@@ -9,7 +9,7 @@ before anything touches a client's real systems.
 - `workflows/` — exported n8n workflow JSON (version-controlled source of truth;
   the live workflow inside n8n is the runtime copy).
 - `prototypes/` — one folder per prototype/demo build, each with its own README.
-- `docs/` — architecture notes, ROI worksheets, client discovery notes.
+- `docs/` — architecture notes, ROI worksheets, client discovery notes. See `docs/mehua-deposit-concierge-spec.md` (Service 1 build spec) and `docs/mauritius-payment-automation-options.md` (payment-automation options research/comparison — the main payment-strategy reference; research + architecture only, nothing built yet).
 - `reference/` — condensed notes on tools/APIs (not vendored copies of third-party repos).
 
 ## Rules

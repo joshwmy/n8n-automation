@@ -65,7 +65,7 @@ A parallel, dev-only path (`TEST - Simulate New Booking`) injects a fake booking
 
 ## Confirmed deposit rule
 
-`deposit_amount_mur = 500`, `payment_method = "Juice"`. This is confirmed data, not an assumption — treat it as fixed. The actual Juice phone number/account details are **not** available yet; the config holds `juice_payment_details = "TO_VALIDATE_JUICE_PAYMENT_DETAILS"` rather than an invented number. See `config/mehua-config.json`.
+`deposit_amount_mur = 500`, `payment_method = "Juice"`, `juice_payment_details = "5902 8505 (MCB Juice)"`. All three are now confirmed, owner-provided data, not assumptions. This is the existing manual Juice number already given to customers — not a PIN/OTP/password. See `config/mehua-config.json`. (For the broader question of whether/how this manual flow should eventually be automated, see `docs/mauritius-payment-automation-options.md` — nothing about the Phase 1 manual flow changes today.)
 
 ## Centralized configuration
 
@@ -85,7 +85,7 @@ One row per booking. Columns: `Booking Reference`, `Client Name`, `Service`, `Ap
 
 1. **A real sample Fresha booking-confirmation email** (forward one, or paste the raw text/headers) — the parsing node in the attached workflow is a placeholder until this exists; `config/fresha-email-fixture.example.txt` is an explicitly fictional stand-in used only to give the parser something concrete to run against, not evidence of Fresha's real format. Without a real sample, the extraction logic is a best guess, not a tested pattern — the workflow fails safely to `NEEDS_HUMAN_REVIEW` when it can't parse required fields, rather than guessing.
 2. **How n8n reads the inbox** — Méhua's own Gmail via OAuth, an app-password IMAP connection, or a forwarding rule into a separate mailbox Joshua controls. Not decided.
-3. **Juice payment details** — the actual phone number/account to put in the drafted messages. Deposit amount (Rs 500) and method (Juice) are confirmed; only the account details are missing. No number has been invented.
+3. ~~Juice payment details~~ — RESOLVED 25 Aug 2026: `5902 8505` (MCB Juice), owner-provided. Config and workflow updated; no longer a placeholder.
 4. **Studio location and deposit/cancellation policy wording** — placeholders in `config/mehua-config.json`, not yet supplied.
 5. **Reminder/escalation timing** — `reminder_escalation_hours: 48` in the config is from the source research ("no proof after 48h"), not yet confirmed directly with Méhua; the 20-hour reminder resend cooldown is our own assumption to avoid spamming the owner, not sourced from any document.
 6. **Owner notification email address** — placeholder in the config, not yet supplied.

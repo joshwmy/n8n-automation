@@ -60,8 +60,8 @@ let out = runNode("Load Mehua Config (Test Path)", [{}]);
 assert(out[0].json.config.deposit.amount === 500, "config.deposit.amount === 500");
 assert(out[0].json.config.deposit.method === "Juice", "config.deposit.method === 'Juice'");
 assert(
-  out[0].json.config.deposit.payment_details === "TO_VALIDATE_JUICE_PAYMENT_DETAILS",
-  "config.deposit.payment_details is still the placeholder (no invented phone number)"
+  out[0].json.config.deposit.payment_details === "5902 8505 (MCB Juice)",
+  "config.deposit.payment_details is the real, owner-provided Juice number (no invented phone number)"
 );
 
 console.log("\n[2] Inject Simulated Booking Data (TEST)");
@@ -87,8 +87,8 @@ assert(out[0].json.messageDraft.includes("TEMPORARY"), "message is clearly marke
 assert(out[0].json.messageDraft.includes("Rs 500"), "message includes the confirmed Rs 500 amount");
 assert(out[0].json.messageDraft.includes("Juice"), "message includes the confirmed Juice payment method");
 assert(
-  out[0].json.messageDraft.includes("TO_VALIDATE_JUICE_PAYMENT_DETAILS"),
-  "message honestly shows the unresolved Juice payment details placeholder, does not invent one"
+  out[0].json.messageDraft.includes("5902 8505"),
+  "message includes the real Juice payment number, not an invented one"
 );
 
 console.log(
