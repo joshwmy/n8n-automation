@@ -7,6 +7,8 @@
 *secrets*
 *token*
 !**/README*
+# .env.* above would also hide the checked-in template - keep it tracked.
+!.env.example
 
 # n8n local data / exports that may contain client data or creds
 *.sqlite

@@ -12,6 +12,27 @@ before anything touches a client's real systems.
 - `docs/` — architecture notes, ROI worksheets, client discovery notes. See `docs/mehua-deposit-concierge-spec.md` (Service 1 build spec) and `docs/mauritius-payment-automation-options.md` (payment-automation options research/comparison — the main payment-strategy reference; research + architecture only, nothing built yet).
 - `reference/` — condensed notes on tools/APIs (not vendored copies of third-party repos).
 
+## Local n8n (Docker)
+
+`docker-compose.yml` runs a single local n8n instance for Phase 1 — no Postgres
+(n8n's built-in SQLite is enough while Google Sheets is the operational
+datastore), no reverse proxy, no tunnel. Bound to `127.0.0.1:5678` only — not
+reachable from the LAN or the internet.
+
+```
+cp .env.example .env      # then fill in a real N8N_ENCRYPTION_KEY (see comments in the file)
+docker compose up -d
+```
+
+Open http://localhost:5678 once it's running. Data (workflows, credentials,
+execution history) persists in the `n8n_data` Docker volume across restarts.
+`docker compose down` stops it; add `-v` to also delete the volume (wipes
+saved credentials and the encryption key's associated data — rarely what you
+want).
+
+`.env` is gitignored and must never be committed — see `.env.example` for
+every variable it needs and what each one does.
+
 ## Rules
 
 - No real client credentials, tokens, or production data in this repo. See `.gitignore`.
