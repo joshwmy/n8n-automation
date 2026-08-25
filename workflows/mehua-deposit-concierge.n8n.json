@@ -1,0 +1,479 @@
+{
+  "name": "Mehua - Booking Deposit Concierge (Service 1)",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "q": "PLACEHOLDER_TO_VALIDATE: e.g. from:noreply@fresha.com subject:(booking OR confirmed)"
+        },
+        "options": {}
+      },
+      "id": "gmail-trigger-01",
+      "name": "New Fresha Booking Email",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        -260
+      ],
+      "notes": "TO_VALIDATE: filter query and poll interval. Needs a real sample Fresha booking-confirmation email to confirm sender address and subject pattern before this is reliable."
+    },
+    {
+      "parameters": {
+        "jsCode": "// TO_VALIDATE: placeholder extraction logic only.\n// Rebuild these regexes against a real Fresha booking-confirmation email\n// before trusting this node. Do not use in production unvalidated.\nconst body = $input.item.json.text || $input.item.json.html || '';\nconst subject = $input.item.json.subject || '';\n\n// PLACEHOLDER patterns - guesses at a typical Fresha email format\nconst clientNameMatch = body.match(/(?:Client|Customer|Booked by)[:\\s]+([A-Za-z '-]+)/i);\nconst serviceMatch = body.match(/(?:Service|Appointment)[:\\s]+([A-Za-z0-9 ,'-]+)/i);\nconst dateTimeMatch = body.match(/(?:Date|When)[:\\s]+([A-Za-z0-9:, -]+)/i);\nconst refMatch = body.match(/(?:Booking (?:ref|reference|id))[:\\s#]+([A-Za-z0-9-]+)/i);\n\nconst clientName = clientNameMatch ? clientNameMatch[1].trim() : null;\nconst service = serviceMatch ? serviceMatch[1].trim() : null;\nconst appointmentAt = dateTimeMatch ? dateTimeMatch[1].trim() : null;\nconst bookingRef = refMatch ? refMatch[1].trim() : null;\n\nconst parseOk = Boolean(clientName && service && appointmentAt);\n\nreturn [{\n  json: {\n    clientName,\n    service,\n    appointmentAt,\n    bookingRef: bookingRef || `NOREF-${Date.now()}`,\n    subject,\n    parseOk\n  }\n}];"
+      },
+      "id": "parse-booking-01",
+      "name": "Parse Booking Details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -180,
+        -260
+      ],
+      "notes": "TO_VALIDATE: this regex/extraction logic is a placeholder guess at Fresha's email format (client name, service, date/time, booking reference). Must be rebuilt against a real sample email before this node can be trusted."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"parseOk\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-parsed-ok-01",
+      "name": "Parsed OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        60,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
+        "range": "Booking Log!A:L",
+        "options": {}
+      },
+      "id": "log-new-booking-01",
+      "name": "Log New Booking",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        320,
+        -360
+      ],
+      "notes": "Append row: Booking Reference, Client Name, Service, Appointment Date/Time, Status=New, Instructions Sent At, Reminder Sent At, Verified At, Verified By, Confirmation Sent At, Notes."
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "depositMessageDraft",
+              "value": "=Hi {{$json[\"clientName\"]}}! Thanks for booking {{$json[\"service\"]}} with Mehua Lashes on {{$json[\"appointmentAt\"]}}. To confirm your slot, please send your deposit of [AMOUNT_TO_VALIDATE] via Juice/bank transfer to [DETAILS_TO_VALIDATE], and reply here with a screenshot. Booking ref: {{$json[\"bookingRef\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "draft-deposit-msg-01",
+      "name": "Draft Deposit Instructions",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        560,
+        -360
+      ],
+      "notes": "TO_VALIDATE: deposit amount and payment details are placeholders. Message text is a draft the owner sends manually via WhatsApp - n8n does not send WhatsApp directly on the free Business App tier."
+    },
+    {
+      "parameters": {
+        "sendTo": "PLACEHOLDER_OWNER_EMAIL",
+        "subject": "=New booking - send deposit instructions to {{$json[\"clientName\"]}}",
+        "message": "={{$json[\"depositMessageDraft\"]}}",
+        "options": {}
+      },
+      "id": "notify-owner-deposit-01",
+      "name": "Notify Owner - Deposit Instructions",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        800,
+        -360
+      ],
+      "notes": "Sends the drafted WhatsApp text to the owner's own inbox so she can copy-paste and send it herself. Replace with WhatsApp/Telegram notification if the owner prefers, once decided."
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
+        "range": "Booking Log!A:L",
+        "options": {}
+      },
+      "id": "update-status-instr-sent-01",
+      "name": "Update Status - Instructions Sent",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        1040,
+        -360
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "PLACEHOLDER_OWNER_EMAIL",
+        "subject": "=Booking email could not be parsed - please check",
+        "message": "=A Fresha booking email arrived but could not be automatically parsed. Please check it manually and log the booking. Raw subject: {{$json[\"subject\"]}}",
+        "options": {}
+      },
+      "id": "notify-owner-parse-fail-01",
+      "name": "Notify Owner - Unparseable Booking Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        320,
+        -160
+      ],
+      "notes": "Error handling: never fail silently. Flags the row for manual follow-up instead."
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 4
+            }
+          ]
+        }
+      },
+      "id": "cron-check-overdue-01",
+      "name": "Every 4 Hours - Check Overdue Deposits",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
+        "range": "Booking Log!A:L",
+        "options": {}
+      },
+      "id": "read-sheet-overdue-01",
+      "name": "Read Booking Log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        -180,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// TO_VALIDATE: 48h escalation window is from the source research,\n// not yet confirmed directly with the owner - adjust ESCALATION_HOURS once she confirms.\nconst ESCALATION_HOURS = 48;\nconst now = new Date();\n\nconst overdue = $input.all().filter(item => {\n  const status = item.json['Status'];\n  const sentAt = item.json['Instructions Sent At'];\n  if (!sentAt) return false;\n  if (status !== 'Instructions Sent' && status !== 'Reminder Sent') return false;\n  const hoursSince = (now - new Date(sentAt)) / (1000 * 60 * 60);\n  return hoursSince >= ESCALATION_HOURS;\n});\n\nreturn overdue;"
+      },
+      "id": "filter-overdue-01",
+      "name": "Filter Rows Overdue (>48h, not verified)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        60,
+        140
+      ],
+      "notes": "TO_VALIDATE: 48h escalation window is from the source research, not yet confirmed with the owner. Filters rows where Status is Instructions Sent/Reminder Sent and hours since Instructions Sent At exceeds the window."
+    },
+    {
+      "parameters": {
+        "sendTo": "PLACEHOLDER_OWNER_EMAIL",
+        "subject": "=Reminder needed - deposit still pending for {{$json[\"clientName\"]}}",
+        "message": "=No deposit confirmation logged yet for booking {{$json[\"bookingRef\"]}}. Suggested reminder to send: Hi {{$json[\"clientName\"]}}, just a friendly reminder to send your deposit to confirm your {{$json[\"service\"]}} appointment on {{$json[\"appointmentAt\"]}}.",
+        "options": {}
+      },
+      "id": "notify-owner-reminder-01",
+      "name": "Notify Owner - Reminder Draft",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        320,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
+        "range": "Booking Log!A:L",
+        "options": {}
+      },
+      "id": "update-status-reminder-sent-01",
+      "name": "Update Status - Reminder Sent",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        560,
+        140
+      ]
+    },
+    {
+      "parameters": {
+        "formTitle": "Mark Deposit Verified - Mehua Lashes",
+        "formDescription": "Owner-only: use after checking the bank/Juice statement yourself. Never mark verified without checking.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Booking Reference",
+              "fieldType": "text",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Verified By",
+              "fieldType": "text",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "form-trigger-verify-01",
+      "name": "Owner Form - Mark Deposit Verified",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        460
+      ],
+      "notes": "Human-in-the-loop checkpoint. The owner is the only one who submits this, only after checking the bank/Juice statement herself. This is intentionally the single point where automatic 'verified' status is impossible."
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
+        "range": "Booking Log!A:L",
+        "options": {}
+      },
+      "id": "update-verified-01",
+      "name": "Update Status - Verified",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        -180,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "confirmationMessageDraft",
+              "value": "=Hi {{$json[\"clientName\"]}}, your deposit is confirmed! Your {{$json[\"service\"]}} appointment is booked for {{$json[\"appointmentAt\"]}}. [POLICY_TEXT_TO_VALIDATE] [LOCATION_TEXT_TO_VALIDATE] See you soon!"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "draft-confirmation-01",
+      "name": "Draft Final Confirmation",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        60,
+        460
+      ],
+      "notes": "TO_VALIDATE: exact policy and location wording not yet supplied."
+    },
+    {
+      "parameters": {
+        "sendTo": "PLACEHOLDER_OWNER_EMAIL",
+        "subject": "=Send confirmation to {{$json[\"clientName\"]}}",
+        "message": "={{$json[\"confirmationMessageDraft\"]}}",
+        "options": {}
+      },
+      "id": "notify-owner-confirmation-01",
+      "name": "Notify Owner - Final Confirmation",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        320,
+        460
+      ]
+    }
+  ],
+  "connections": {
+    "New Fresha Booking Email": {
+      "main": [
+        [
+          {
+            "node": "Parse Booking Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Booking Details": {
+      "main": [
+        [
+          {
+            "node": "Parsed OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parsed OK?": {
+      "main": [
+        [
+          {
+            "node": "Log New Booking",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Owner - Unparseable Booking Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log New Booking": {
+      "main": [
+        [
+          {
+            "node": "Draft Deposit Instructions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft Deposit Instructions": {
+      "main": [
+        [
+          {
+            "node": "Notify Owner - Deposit Instructions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Owner - Deposit Instructions": {
+      "main": [
+        [
+          {
+            "node": "Update Status - Instructions Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 4 Hours - Check Overdue Deposits": {
+      "main": [
+        [
+          {
+            "node": "Read Booking Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Booking Log": {
+      "main": [
+        [
+          {
+            "node": "Filter Rows Overdue (>48h, not verified)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Rows Overdue (>48h, not verified)": {
+      "main": [
+        [
+          {
+            "node": "Notify Owner - Reminder Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Owner - Reminder Draft": {
+      "main": [
+        [
+          {
+            "node": "Update Status - Reminder Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Owner Form - Mark Deposit Verified": {
+      "main": [
+        [
+          {
+            "node": "Update Status - Verified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status - Verified": {
+      "main": [
+        [
+          {
+            "node": "Draft Final Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Draft Final Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Notify Owner - Final Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "note": "Prototype scaffold, not yet validated against a live n8n instance or real Fresha email. See workflows/README.md and docs/mehua-deposit-concierge-spec.md before relying on this. Every node marked TO_VALIDATE needs real input from Joshua/Mehua before this is trustworthy."
+  }
+}
