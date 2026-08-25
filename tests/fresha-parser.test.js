@@ -108,7 +108,8 @@ console.log("\n[fixture 2] Format B - action-required 'complete form' reminder (
 out = parse("fresha-booking-02.txt");
 assert(out.emailKind === "recognized_other:action_required_form", `fixture 2 classifies as recognized_other:action_required_form (got ${out.emailKind})`);
 assert(out.parseOk === false, "fixture 2 does NOT parse as a bookable record (parseOk === false)");
-assert(out.requiresHumanReview === true, "fixture 2 routes to NEEDS_HUMAN_REVIEW");
+assert(out.isRecognizedNonBooking === true, "fixture 2 is flagged as a recognized non-booking event");
+assert(out.requiresHumanReview === false, "fixture 2 does NOT require human review - a recognized cancellation/reminder email is expected input, not an error");
 assert(out.reviewReason.includes("out of scope"), "fixture 2 reviewReason explains it's out of scope, not a parse failure");
 assert(out.freshaBookingRef === "FB77AC21", `fixture 2 DOES expose a real Fresha booking ref (got ${out.freshaBookingRef})`);
 assert(out.clientName === null && out.bookingReference === null, "fixture 2 creates no booking fields/reference");
@@ -117,7 +118,8 @@ console.log("\n[fixture 3] Format B - cancellation notice (NOT a new booking)");
 out = parse("fresha-booking-03.txt");
 assert(out.emailKind === "recognized_other:cancellation", `fixture 3 classifies as recognized_other:cancellation (got ${out.emailKind})`);
 assert(out.parseOk === false, "fixture 3 does NOT parse as a bookable record (parseOk === false)");
-assert(out.requiresHumanReview === true, "fixture 3 routes to NEEDS_HUMAN_REVIEW");
+assert(out.isRecognizedNonBooking === true, "fixture 3 is flagged as a recognized non-booking event");
+assert(out.requiresHumanReview === false, "fixture 3 does NOT require human review - a recognized cancellation is expected input, not an error");
 assert(out.freshaBookingRef === "FB77AC21", "fixture 3 also exposes the real Fresha booking ref");
 assert(out.clientName === null && out.bookingReference === null, "fixture 3 creates no booking fields/reference (never a duplicate new booking either)");
 
@@ -127,7 +129,8 @@ console.log("[malformed] completely empty email body");
 out = parse({ subject: "", text: "" });
 assert(out.emailKind === "unknown", "empty body classifies as unknown");
 assert(out.parseOk === false, "empty body never parses");
-assert(out.requiresHumanReview === true, "empty body routes to NEEDS_HUMAN_REVIEW");
+assert(out.isRecognizedNonBooking === false, "empty body is NOT a recognized non-booking event - it's genuinely unknown");
+assert(out.requiresHumanReview === true, "empty body (genuinely unknown) still routes to NEEDS_HUMAN_REVIEW");
 
 console.log("\n[unknown format] unrelated, non-Fresha email");
 out = parse({
@@ -170,6 +173,15 @@ out = parse({
 assert(out.parseOk === false, "fails safely when the service+date block doesn't match the expected shape");
 assert(out.reviewReason.includes("service not found"), `reviewReason names the missing service (got: ${out.reviewReason})`);
 assert(out.reviewReason.includes("appointment date/time not found"), `reviewReason also names the missing date/time, since both come from the same match (got: ${out.reviewReason})`);
+
+console.log("\n=== Recognized Non-Booking Event routing (Log Recognized Non-Booking Event node) ===\n");
+
+const recognizedEventCode = getNodeCode("Log Recognized Non-Booking Event (Ignored)");
+const cancellationParsed = parse("fresha-booking-03.txt");
+const loggedEvent = runNode(recognizedEventCode, cancellationParsed);
+assert(loggedEvent.event === "recognized_non_booking_event_ignored", "cancellation fixture produces the expected observability event");
+assert(loggedEvent.emailKind === "recognized_other:cancellation", "logged event carries the classified emailKind");
+assert(loggedEvent.freshaBookingRef === "FB77AC21", "logged event still carries the real Fresha booking ref, for reference");
 
 console.log("\n=== Duplicate detection (Check Duplicate Booking node) ===\n");
 

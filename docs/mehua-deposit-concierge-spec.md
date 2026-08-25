@@ -167,7 +167,13 @@ Fields present here that Format A lacks: **a stable `Booking ref:` identifier** 
 
 ### What this means for the parser
 
-Fresha **does** expose a stable booking reference, but not in the email type that actually triggers new-booking processing. The three samples must not be treated as "three interchangeable new-booking emails" — doing so would be actively unsafe (e.g. parsing a cancellation email as a new booking). The parser first classifies the email kind, then only extracts full booking-creation fields for `new_booking` (Format A). `recognized_other` (Format B — cancellation or action-required-form) and `unknown` both route to `NEEDS_HUMAN_REVIEW` with a distinct reason, rather than being silently dropped or misparsed as a new booking. Phase 1 does not act on cancellations or profile-completion reminders; making that explicit and visible (not silent) is the safe choice per the "fail safely, never guess" rule.
+Fresha **does** expose a stable booking reference, but not in the email type that actually triggers new-booking processing. The three samples must not be treated as "three interchangeable new-booking emails" — doing so would be actively unsafe (e.g. parsing a cancellation email as a new booking). The parser classifies every incoming email into exactly one of three outcomes, refined 25 Aug 2026 per Joshua's explicit instruction that a recognized cancellation/reminder must not be treated the same as a genuine parse failure:
+
+1. **`new_booking` (Format A), parses successfully** → continues into the deposit workflow (duplicate check, then `Compute Deposit Fields`, then the deposit-request draft). `requiresHumanReview: false`.
+2. **`recognized_other:*` (Format B — cancellation or action-required-form-reminder)** → a real, known Fresha email type that is simply out of scope for what Phase 1 automates. `isRecognizedNonBooking: true`, `requiresHumanReview: false`. Routed by the `Recognized Non-Booking Event?` node to `Log Recognized Non-Booking Event (Ignored)` — a terminal, intentionally no-op node. **No booking, no deposit, and no row is written to the Booking Log for these.** n8n's own execution log makes the branch observable without touching the sheet. This is not cancellation automation; it is only "do nothing, safely, instead of misfiring."
+3. **`unknown` (genuinely unparseable/unrecognized), or a `new_booking`-shaped email missing a required field** → `requiresHumanReview: true`, `isRecognizedNonBooking: false`, routed to `Log Unparseable Booking (NEEDS_HUMAN_REVIEW)` and written to the sheet with a `reviewReason` explaining exactly what was missing or unrecognized.
+
+`NEEDS_HUMAN_REVIEW` is reserved for outcome 3 only — a recognized Format B email is expected input, not an error a human needs to review.
 
 ### Fields: required / optional / not available (Format A — the actual trigger)
 
