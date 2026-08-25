@@ -1,0 +1,27 @@
+# Secrets & credentials — never commit
+.env
+.env.*
+*.pem
+*.key
+*credentials*
+*secrets*
+*token*
+!**/README*
+
+# n8n local data / exports that may contain client data or creds
+*.sqlite
+n8n_data/
+.n8n/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
+*.log
+
+# dependencies / build
+node_modules/
+__pycache__/
+*.pyc
+dist/
+build/
