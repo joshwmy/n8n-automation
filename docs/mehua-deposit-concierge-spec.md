@@ -75,15 +75,132 @@ Message templates (`deposit_request_template`, `deposit_reminder_template`, `boo
 
 ## Google Sheet — booking log schema
 
-One row per booking. Columns: `Booking Reference`, `Client Name`, `Service`, `Appointment Date`, `Appointment Time`, `Status` (one of the payment status states above), `Deposit Amount`, `Payment Method`, `Deposit Request Sent At`, `Reminder Sent At`, `Proof Received At`, `Verified At`, `Verified By`, `Verification Result`, `Confirmation Sent At`, `Notes`, `Source` (`email` or `test-simulation`).
+One row per booking, `Booking Log!A:AB` (28 columns). Updated 25 Aug 2026 to add the idempotency/dedup fields, human-review flag, and timestamps the real-parser + duplicate-detection work needed:
+
+`Booking Reference` (human-typeable code the owner enters into the two owner forms - e.g. `MH-260909-7F2K` - distinct from the idempotency key below), `Client ID` (constant `mehua_lashes` from config, kept as a column for future multi-tenant reuse), `Idempotency Key` (Fresha Booking Ref when available, else the composite key - used ONLY by automated duplicate detection, never shown to the owner), `Fresha Booking Ref` (expected blank for real new-booking rows - see "Real Fresha email analysis"), `Client Name`, `Customer Contact` (email or phone, whichever was captured), `Contact Match Strength` (`email` / `phone` / `name_only` - how strong the idempotency match is), `Service`, `Staff Name`, `Appointment Date`, `Appointment Time`, `Status` (one of the payment status states above), `Requires Human Review`, `Review Reason`, `Deposit Amount`, `Deposit Currency`, `Payment Method`, `Deposit Request Sent At`, `Reminder Sent At`, `Proof Received At`, `Verified At`, `Verified By`, `Verification Result`, `Confirmation Sent At`, `Created At`, `Updated At`, `Notes`, `Source` (`email` or `test-simulation`).
+
+The two Log nodes (`Log New Booking`, `Log Unparseable Booking`) map these explicitly by column header (`columns.mappingMode: defineBelow`) rather than relying on key-name auto-matching. **TO_VALIDATE on import:** the mapping assumes the real sheet's header row uses these exact column names - verify and adjust if Joshua's actual sheet differs.
+
+### Duplicate detection
+
+Before a parsed `new_booking` is logged, `Read Booking Log (Duplicate Check)` reads the whole sheet and `Check Duplicate Booking` compares the new booking's `Idempotency Key` against every existing row's `Idempotency Key`. If a match is found, `Is Duplicate?` routes to `Log Duplicate Booking Ignored` - a terminal, intentionally no-op node (not writing a new row is the correct behavior; n8n's own execution log makes the branch observable). No match routes to `Compute Deposit Fields` exactly as before. This satisfies the requirement that the same Fresha booking can never create two booking records, two deposit drafts, or two reminder lifecycles.
 
 ## Testing
 
 `tests/mehua-lifecycle.test.js` runs the exact JavaScript from the workflow's Code nodes (extracted from `workflows/mehua-deposit-concierge.n8n.json`, not reimplemented) through a small mock of n8n's Code-node context, and walks the full lifecycle end to end: simulate a booking → compute deposit fields (asserts Rs 500 / Juice) → render the deposit request → simulate the owner reporting proof → simulate the owner verifying → render the confirmation. It asserts the placeholders (Juice payment details, studio location, deposit policy) come through honestly rather than being silently invented. Run it with `node tests/mehua-lifecycle.test.js` — no n8n instance, real inbox, real customer or real payment required. Current status: passes.
 
+## Real Fresha email analysis (25 Aug 2026 — 3 genuine samples)
+
+Three genuine Fresha emails were provided (forwarded from the owner's own test booking, 13–14 Dec 2025 and 8 Aug 2026). They replace `config/fresha-email-fixture.example.txt` (explicitly fictional) as the authority for parser design. **Critical finding: they are not three copies of the same email type — they are two structurally different formats, one of which is not even the email the workflow needs to parse for new bookings.**
+
+### Format A — "New appointment" (owner-facing, plain-text style)
+
+This is the email Fresha sends to the **business's own inbox** when a client books online — i.e. the actual email the Gmail Trigger will see and must parse to create a deposit record. Confirmed sender across all 3 samples: `mail@updates.fresha.com`, display name `{Business Name}` (e.g. "Méhua Lashes"). Subject observed: `New appointment` (no date/time, no booking ref in the subject).
+
+Body structure (stable order, stable literal markers in **bold**):
+
+```
+Appointment confirmed
+
+Hi {account holder name},
+
+**The following appointment has been booked online**
+
+{service} with {staff name}
+{Weekday}, {D} {Mon} {YYYY}, {HH:MM}
+
+**At this location:**
+
+{business name} - {business name}
+{address line}
+
+**Customer details:**
+
+{customer name}
+{customer email}
+{customer phone}
+Powered by Fresha
+```
+
+Fields present: service, staff name (via `"{service} with {staff}"`), appointment date+time (one line, parseable), business name/address, customer name, customer email, customer phone. **Fields absent: booking/reference ID, price, duration, booking status text.** This is a real, structural absence — not a parsing gap. Format A never carries a Fresha booking reference anywhere in the 3 samples.
+
+### Format B — client-facing HTML "card" notifications
+
+Two of the three samples (the "action required / complete form" reminder and the cancellation notice) are a different Fresha email type entirely: outward notifications to the **client**, sharing one stable HTML/MJML structure. Same confirmed sender (`mail@updates.fresha.com`). These would only land in the owner's inbox in production if the owner used her own address as the test client (as happened here) — in real use they go to the customer's inbox, not the business's.
+
+Stable structure across both:
+
+```
+Hi {client first name}, {status-specific headline}
+{business name} (linked) — {address}
+
+[date badge] {Weekday D Month at HH:MM}
+{service name}
+
+[staff avatar] with {staff name} (linked)
+{staff role}
+
+[status badge: "Cancelled" | "Action required"]
+
+Appointment details
+{service name}                MUR {price}
+{duration} with {staff name}
+
+Total                         MUR {price}
+
+Booking ref: {8-char alnum, uppercase — e.g. EC174CE2}
+
+Location
+{business name}
+{address}
+
+Cancellation policy
+Please cancel at least {N hours} before appointment.
+
+[cancellation only: Rebook appointment links]
+[reminder only: Complete form / Manage appointment links + "Important info" bullet list]
+
+We sent you this email because you have booked with {business}, which partners with Fresha for appointments and payments.
+```
+
+Fields present here that Format A lacks: **a stable `Booking ref:` identifier** (confirmed format: 8 uppercase alphanumeric characters, e.g. `EC174CE2` — identical across both Format B samples because both concern the same underlying booking), price, duration, cancellation-policy text. Field absent here that Format A has: customer email/phone (Format B never discloses the client's own contact details back to them).
+
+### What this means for the parser
+
+Fresha **does** expose a stable booking reference, but not in the email type that actually triggers new-booking processing. The three samples must not be treated as "three interchangeable new-booking emails" — doing so would be actively unsafe (e.g. parsing a cancellation email as a new booking). The parser first classifies the email kind, then only extracts full booking-creation fields for `new_booking` (Format A). `recognized_other` (Format B — cancellation or action-required-form) and `unknown` both route to `NEEDS_HUMAN_REVIEW` with a distinct reason, rather than being silently dropped or misparsed as a new booking. Phase 1 does not act on cancellations or profile-completion reminders; making that explicit and visible (not silent) is the safe choice per the "fail safely, never guess" rule.
+
+### Fields: required / optional / not available (Format A — the actual trigger)
+
+| Field | Status | Notes |
+|---|---|---|
+| customer_name | REQUIRED | "Customer details:" block, line 1 |
+| service | REQUIRED | Parsed from `"{service} with {staff}"` line |
+| appointment_date | REQUIRED | Parsed from the date/time line |
+| appointment_time | REQUIRED | Same line as date |
+| staff_name | OPTIONAL | Same `"... with {staff}"` line; present in all 3 samples but not treated as blocking |
+| customer_email | OPTIONAL (but strongly preferred) | Present in Format A; used as the primary idempotency contact match when available |
+| customer_phone | OPTIONAL (but strongly preferred) | Present in Format A; fallback contact match |
+| business name / address | OPTIONAL | Present, not currently used downstream beyond the confirmation template's studio_location |
+| booking/reference ID (`fresha_booking_id`) | **NOT AVAILABLE** in Format A | Confirmed present in Format B under a stable `Booking ref:` label, but that email type is not the new-booking trigger. Do not assume it will appear in the emails this workflow parses. |
+| price / duration / status text | NOT AVAILABLE in Format A | Present in Format B only; not required for the deposit workflow |
+
+### Booking ID and idempotency (resolved per spec item 9)
+
+Fresha does have a stable booking/reference ID system (confirmed by the `Booking ref: EC174CE2` field in both Format B samples), but **the new-booking notification email this workflow actually parses does not include it.** `fresha_booking_id` is therefore `NOT AVAILABLE` for Phase 1's trigger path, not merely unconfirmed.
+
+The idempotency key is a composite, in priority order:
+
+```
+1. customer_email + appointment_date + appointment_time + service   (strongest available)
+2. customer_phone (normalized, digits only) + appointment_date + appointment_time + service   (if no email)
+3. lowercased customer_name + appointment_date + appointment_time + service   (weakest — logged as such)
+```
+
+This is explicitly weaker than a genuine provider booking ID: a client who is renamed, rebooks under a different contact method, or whose name is spelled differently between two bookings could in principle produce a different key for what a human would call "the same booking." It is, however, the strongest signal actually present in the email Fresha sends. The match tier used (`email` / `phone` / `name_only`) is recorded on every parsed booking (`contactMatchStrength`) so a `name_only` match is visibly weaker in the log, not silently trusted the same as an email match. If a future email sample or Fresha inbox integration surfaces a genuine `fresha_booking_id` in the new-booking notification, switch the idempotency key to that immediately — this composite key is a documented fallback, not the target design.
+
 ## What's still genuinely missing (`TO_VALIDATE` — not guessed, needs Joshua/Méhua)
 
-1. **A real sample Fresha booking-confirmation email** (forward one, or paste the raw text/headers) — the parsing node in the attached workflow is a placeholder until this exists; `config/fresha-email-fixture.example.txt` is an explicitly fictional stand-in used only to give the parser something concrete to run against, not evidence of Fresha's real format. Without a real sample, the extraction logic is a best guess, not a tested pattern — the workflow fails safely to `NEEDS_HUMAN_REVIEW` when it can't parse required fields, rather than guessing.
+1. ~~A real sample Fresha booking-confirmation email~~ — RESOLVED 25 Aug 2026: three genuine Fresha emails analysed (see "Real Fresha email analysis" above). The parser is now built against the real "New appointment" format, not the fictional `config/fresha-email-fixture.example.txt` (kept in the repo only as a labeled historical artifact — no longer authoritative). `fresha_booking_id` was confirmed NOT available in the new-booking trigger email; a documented composite key is used instead (see above).
 2. **How n8n reads the inbox** — Méhua's own Gmail via OAuth, an app-password IMAP connection, or a forwarding rule into a separate mailbox Joshua controls. Not decided.
 3. ~~Juice payment details~~ — RESOLVED 25 Aug 2026: `5902 8505` (MCB Juice), owner-provided. Config and workflow updated; no longer a placeholder.
 4. **Studio location and deposit/cancellation policy wording** — placeholders in `config/mehua-config.json`, not yet supplied.

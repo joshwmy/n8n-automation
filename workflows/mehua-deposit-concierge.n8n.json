@@ -20,7 +20,10 @@
       "name": "New Fresha Booking Email",
       "type": "n8n-nodes-base.gmailTrigger",
       "typeVersion": 1,
-      "position": [-700, -600],
+      "position": [
+        -700,
+        -600
+      ],
       "notes": "PROVISIONAL/TO_VALIDATE: filter query and poll interval are guesses. Needs a real sample Fresha booking-confirmation email to confirm sender address and subject pattern before this is reliable."
     },
     {
@@ -31,19 +34,25 @@
       "name": "Load Mehua Config (Email Path)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-440, -600],
+      "position": [
+        -440,
+        -600
+      ],
       "notes": "Centralized config, embedded here because n8n has no cross-branch config include without an Execute Workflow sub-node (not set up yet). Keep in sync with config/mehua-config.json — see workflows/README.md."
     },
     {
       "parameters": {
-        "jsCode": "// PROVISIONAL / TO_VALIDATE: placeholder extraction logic only — a guess at\n// Fresha's email format. Rebuild against a real Fresha booking-confirmation\n// email (see config/fresha-email-fixture.example.txt, which is FICTIONAL,\n// not real) before trusting this node. Fails safely: parseOk=false routes to\n// the NEEDS_HUMAN_REVIEW branch instead of guessing.\nconst item = $input.item.json;\nconst config = item.config;\nconst body = item.text || item.html || '';\nconst subject = item.subject || '';\n\nconst clientNameMatch = body.match(/(?:Client|Customer|Booked by)[:\\s]+([A-Za-z '-]+)/i);\nconst serviceMatch = body.match(/(?:Service|Appointment)[:\\s]+([A-Za-z0-9 ,'-]+)/i);\nconst dateMatch = body.match(/(?:Date|When)[:\\s]+(\\d{4}-\\d{2}-\\d{2})/i);\nconst timeMatch = body.match(/(\\d{1,2}:\\d{2})/);\nconst refMatch = body.match(/(?:Booking (?:ref|reference|id))[:\\s#]+([A-Za-z0-9-]+)/i);\n\nconst clientName = clientNameMatch ? clientNameMatch[1].trim() : null;\nconst service = serviceMatch ? serviceMatch[1].trim() : null;\nconst bookingDate = dateMatch ? dateMatch[1].trim() : null;\nconst bookingTime = timeMatch ? timeMatch[1].trim() : null;\nconst bookingRef = refMatch ? refMatch[1].trim() : null;\n\nconst parseOk = Boolean(clientName && service && bookingDate && bookingTime);\n\nreturn [{\n  json: {\n    config,\n    clientName,\n    service,\n    bookingDate,\n    bookingTime,\n    bookingRef: bookingRef || `NOREF-${Date.now()}`,\n    subject,\n    parseOk,\n    source: 'email'\n  }\n}];"
+        "jsCode": "// Real Fresha email parser, built from 3 genuine Fresha email samples analysed\n// 25 Aug 2026 (see docs/mehua-deposit-concierge-spec.md, \"Real Fresha email\n// analysis\"). Two structurally different Fresha email types were found:\n//   - Format A \"New appointment\" (owner-facing, plain-text-style) - the ONLY\n//     type this workflow should act on. Has customer contact details but NO\n//     Fresha booking reference.\n//   - Format B (client-facing HTML cards: cancellation notice, \"complete\n//     form\" reminder) - has a stable \"Booking ref:\" but is NOT a new-booking\n//     trigger and must never be parsed into a new deposit record.\n// Classifies the email kind FIRST. Only \"new_booking\" extracts full booking\n// fields. Everything else (recognized-but-out-of-scope Format B emails, or\n// truly unknown input) routes to NEEDS_HUMAN_REVIEW with a distinct reason -\n// never silently dropped, never guessed into a booking.\nconst item = $input.item.json;\nconst config = item.config;\nconst subject = item.subject || '';\nconst body = item.text || item.html || '';\n\nconst MONTHS = {\n  jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',\n  jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12'\n};\n\nfunction normalizePhone(raw) {\n  if (!raw) return null;\n  const digits = raw.replace(/\\D/g, '');\n  return digits || null;\n}\n\nfunction extractFreshaBookingRef(text) {\n  // Present in Format B (\"Booking ref: EC174CE2\"), confirmed absent in\n  // Format A across all 3 real samples. Extracted here regardless of\n  // classification so it is never silently missed if Fresha's format\n  // ever changes - see spec's idempotency-key note.\n  const m = text.match(/Booking ref:\\s*([A-Za-z0-9]{6,10})/i);\n  return m ? m[1].trim().toUpperCase() : null;\n}\n\nfunction parseDateTimeLine(line) {\n  // Format A shape: \"Wednesday, 9 Sep 2026, 10:00\"\n  const m = line.match(/^\\s*\\w+,\\s*(\\d{1,2})\\s+([A-Za-z]{3,9})\\s+(\\d{4}),\\s*(\\d{1,2}:\\d{2})\\s*$/);\n  if (!m) return null;\n  const [, day, monName, year, time] = m;\n  const mon = MONTHS[monName.slice(0, 3).toLowerCase()];\n  if (!mon) return null;\n  return { date: `${year}-${mon}-${day.padStart(2, '0')}`, time };\n}\n\nfunction classify(subjectText, bodyText) {\n  const bookedOnline = /has been booked online/i.test(bodyText);\n  const cancelled = /has been cancelled/i.test(subjectText) || /appointment has been cancelled/i.test(bodyText);\n  const actionRequired = /Action required/i.test(bodyText) && /Complete form/i.test(bodyText);\n  if (bookedOnline) return 'new_booking';\n  if (cancelled) return 'recognized_other:cancellation';\n  if (actionRequired) return 'recognized_other:action_required_form';\n  return 'unknown';\n}\n\nfunction extractNewBookingFields(bodyText) {\n  const errors = [];\n\n  const bookedMatch = bodyText.match(/has been booked online\\s*\\r?\\n+([^\\r\\n]+)\\r?\\n([^\\r\\n]+)/i);\n  let service = null, staffName = null, bookingDate = null, bookingTime = null;\n  if (bookedMatch) {\n    const serviceStaffLine = bookedMatch[1].trim();\n    const dateTimeLine = bookedMatch[2].trim();\n    const ssMatch = serviceStaffLine.match(/^(.*?)\\s+with\\s+(.+)$/i);\n    if (ssMatch) {\n      service = ssMatch[1].trim();\n      staffName = ssMatch[2].trim();\n    } else if (serviceStaffLine) {\n      service = serviceStaffLine;\n    }\n    const dt = parseDateTimeLine(dateTimeLine);\n    if (dt) {\n      bookingDate = dt.date;\n      bookingTime = dt.time;\n    }\n  }\n  if (!service) errors.push('service not found');\n  if (!bookingDate || !bookingTime) errors.push('appointment date/time not found or unparseable');\n\n  let customerName = null, customerEmail = null, customerPhone = null;\n  const custMatch = bodyText.match(/Customer details:\\s*\\r?\\n+([\\s\\S]{0,300})/i);\n  if (custMatch) {\n    const lines = custMatch[1].split(/\\r?\\n/).map((l) => l.trim()).filter(Boolean);\n    for (const line of lines.slice(0, 4)) {\n      if (/^Powered by Fresha/i.test(line)) break;\n      if (line.includes('@')) { customerEmail = line; continue; }\n      if (/^\\+?[\\d ()-]{7,}$/.test(line)) { customerPhone = line; continue; }\n      if (!customerName) { customerName = line; continue; }\n    }\n  }\n  if (!customerName) errors.push('customer name not found');\n\n  return { service, staffName, bookingDate, bookingTime, customerName, customerEmail, customerPhone, errors };\n}\n\nfunction makeBookingReference() {\n  // Human-typeable reference the owner enters into the two owner-facing\n  // forms later (report proof / review verification). Distinct from the\n  // idempotency key below, which is never shown to or typed by the owner.\n  const now = new Date();\n  const yymmdd = now.toISOString().slice(2, 10).replace(/-/g, '');\n  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();\n  return `MH-${yymmdd}-${rand}`;\n}\n\nconst emailKind = classify(subject, body);\nconst freshaBookingRef = extractFreshaBookingRef(body);\n\nlet result;\n\nif (emailKind === 'new_booking') {\n  const parsed = extractNewBookingFields(body);\n  const requiredOk = Boolean(parsed.service && parsed.bookingDate && parsed.bookingTime && parsed.customerName);\n\n  let contactMatchStrength = null;\n  let contactKey = null;\n  if (parsed.customerEmail) {\n    contactMatchStrength = 'email';\n    contactKey = parsed.customerEmail.trim().toLowerCase();\n  } else if (parsed.customerPhone) {\n    contactMatchStrength = 'phone';\n    contactKey = normalizePhone(parsed.customerPhone);\n  } else if (parsed.customerName) {\n    contactMatchStrength = 'name_only';\n    contactKey = parsed.customerName.trim().toLowerCase();\n  }\n\n  const compositeKey = requiredOk\n    ? [contactKey, parsed.bookingDate, parsed.bookingTime, parsed.service.trim().toLowerCase()].join('|')\n    : null;\n\n  result = {\n    config,\n    emailKind,\n    parseOk: requiredOk,\n    requiresHumanReview: !requiredOk,\n    reviewReason: requiredOk ? null : `new_booking email missing required field(s): ${parsed.errors.join(', ')}`,\n    bookingReference: requiredOk ? makeBookingReference() : null,\n    clientName: parsed.customerName,\n    service: parsed.service,\n    staffName: parsed.staffName,\n    bookingDate: parsed.bookingDate,\n    bookingTime: parsed.bookingTime,\n    customerEmail: parsed.customerEmail,\n    customerPhone: parsed.customerPhone,\n    freshaBookingRef,\n    contactMatchStrength,\n    compositeKey,\n    idempotencyKey: freshaBookingRef || compositeKey,\n    subject,\n    source: 'email'\n  };\n} else {\n  const reasonMap = {\n    'recognized_other:cancellation': 'Recognized Fresha cancellation email - out of scope for Phase 1 (no booking created or modified).',\n    'recognized_other:action_required_form': 'Recognized Fresha \"complete form\" reminder email - out of scope for Phase 1 (no booking created or modified).',\n    unknown: 'Unrecognized email format - could not classify as a Fresha new-booking notification.'\n  };\n  result = {\n    config,\n    emailKind,\n    parseOk: false,\n    requiresHumanReview: true,\n    reviewReason: reasonMap[emailKind] || reasonMap.unknown,\n    bookingReference: null,\n    clientName: null,\n    service: null,\n    staffName: null,\n    bookingDate: null,\n    bookingTime: null,\n    customerEmail: null,\n    customerPhone: null,\n    freshaBookingRef,\n    contactMatchStrength: null,\n    compositeKey: null,\n    idempotencyKey: null,\n    subject,\n    source: 'email'\n  };\n}\n\nreturn [{ json: result }];"
       },
       "id": "parse-booking-01",
-      "name": "Parse Booking Details (PROVISIONAL)",
+      "name": "Parse Fresha Booking Email",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-180, -600],
-      "notes": "TO_VALIDATE: needs a real Fresha email. Required fields missing => parseOk=false => fails safely to NEEDS_HUMAN_REVIEW, never guesses a booking into existence."
+      "position": [
+        -180,
+        -600
+      ],
+      "notes": "Real parser built from 3 genuine Fresha email samples (25 Aug 2026). Classifies email kind before extracting anything. Only 'new_booking' (Format A, the actual owner-inbox trigger) produces a bookable record; recognized Format B emails (cancellation / complete-form reminder) and anything unrecognized route to NEEDS_HUMAN_REVIEW instead of being misparsed as a new booking. See docs/mehua-deposit-concierge-spec.md."
     },
     {
       "parameters": {},
@@ -51,7 +60,10 @@
       "name": "TEST - Simulate New Booking (Dev Only)",
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [-700, -380],
+      "position": [
+        -700,
+        -380
+      ],
       "notes": "Run this manually to exercise the full lifecycle without a real Gmail inbox, real Fresha email, real customer, real Juice transaction or real WhatsApp account."
     },
     {
@@ -62,18 +74,24 @@
       "name": "Load Mehua Config (Test Path)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-440, -380],
+      "position": [
+        -440,
+        -380
+      ],
       "notes": "Duplicate of Load Mehua Config (Email Path) — see that node's notes. Keep in sync with config/mehua-config.json."
     },
     {
       "parameters": {
-        "jsCode": "// TEST FIXTURE ONLY — never a real customer, real Juice transaction, real Gmail\n// inbox or real WhatsApp account. See config/mehua-config.json test_scenario\n// for the documented scenario this mirrors.\nconst item = $input.item.json;\nconst config = item.config;\n\nconst futureDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000); // 3 days from now\nconst bookingDate = futureDate.toISOString().slice(0, 10);\n\nreturn [{\n  json: {\n    config,\n    clientName: \"Test Customer\",\n    service: \"Classic Full Set\",\n    bookingDate,\n    bookingTime: \"10:00\",\n    bookingRef: `TEST-${Date.now()}`,\n    subject: \"[TEST] Simulated booking\",\n    parseOk: true,\n    source: 'test-simulation'\n  }\n}];"
+        "jsCode": "// TEST FIXTURE ONLY - never a real customer, real Juice transaction, real Gmail\n// inbox or real WhatsApp account. See config/mehua-config.json test_scenario\n// for the documented scenario this mirrors. Output shape matches the real\n// parser's (\"Parse Fresha Booking Email\") new_booking output exactly, so\n// every downstream node behaves identically regardless of entry point.\nconst item = $input.item.json;\nconst config = item.config;\n\nconst futureDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000); // 3 days from now\nconst bookingDate = futureDate.toISOString().slice(0, 10);\n\nconst now = new Date();\nconst yymmdd = now.toISOString().slice(2, 10).replace(/-/g, '');\nconst bookingReference = `MH-TEST-${yymmdd}-${Date.now().toString(36).slice(-4).toUpperCase()}`;\n\nconst customerEmail = \"test.customer@example.com\";\nconst compositeKey = [customerEmail, bookingDate, \"10:00\", \"classic full set\"].join('|');\n\nreturn [{\n  json: {\n    config,\n    emailKind: 'new_booking',\n    parseOk: true,\n    requiresHumanReview: false,\n    reviewReason: null,\n    bookingReference,\n    clientName: \"Test Customer\",\n    service: \"Classic Full Set\",\n    staffName: \"Test Stylist\",\n    bookingDate,\n    bookingTime: \"10:00\",\n    customerEmail,\n    customerPhone: null,\n    freshaBookingRef: null,\n    contactMatchStrength: 'email',\n    compositeKey,\n    idempotencyKey: compositeKey,\n    subject: \"[TEST] Simulated booking\",\n    parseOkNote: \"Simulated booking always parses - this exercises the happy path, not the parser itself. See tests/fresha-parser.test.js for real parser coverage.\",\n    source: 'test-simulation'\n  }\n}];"
       },
       "id": "inject-test-data-01",
       "name": "Inject Simulated Booking Data (TEST)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-180, -380],
+      "position": [
+        -180,
+        -380
+      ],
       "notes": "Deposit required = Rs 500 via Juice, initial status AWAITING_DEPOSIT, per the confirmed deposit rule."
     },
     {
@@ -91,32 +109,69 @@
       "name": "Parsed OK?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [80, -490]
+      "position": [
+        80,
+        -490
+      ]
     },
     {
       "parameters": {
-        "jsCode": "const item = $input.item.json;\nconst config = item.config;\n\nreturn [{\n  json: {\n    ...item,\n    status: \"AWAITING_DEPOSIT\",\n    depositAmount: config.deposit.amount,\n    paymentMethod: config.deposit.method,\n    juicePaymentDetails: config.deposit.payment_details\n  }\n}];"
+        "jsCode": "const item = $input.item.json;\nconst config = item.config;\nconst nowIso = new Date().toISOString();\n\nreturn [{\n  json: {\n    ...item,\n    status: \"AWAITING_DEPOSIT\",\n    clientId: config.client_id,\n    depositAmount: config.deposit.amount,\n    depositCurrency: config.currency,\n    paymentMethod: config.deposit.method,\n    juicePaymentDetails: config.deposit.payment_details,\n    customerContact: item.customerEmail || item.customerPhone || null,\n    createdAt: nowIso,\n    updatedAt: nowIso\n  }\n}];"
       },
       "id": "compute-deposit-fields-01",
       "name": "Compute Deposit Fields",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [340, -600],
+      "position": [
+        340,
+        -600
+      ],
       "notes": "CONFIRMED: deposit_amount_mur=500, payment_method=Juice. juicePaymentDetails is still 5902 8505 (MCB Juice)."
     },
     {
       "parameters": {
         "operation": "append",
         "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:Q",
-        "options": {}
+        "range": "Booking Log!A:AB",
+        "options": {},
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Booking Reference": "={{$json.bookingReference}}",
+            "Client ID": "={{$json.clientId}}",
+            "Idempotency Key": "={{$json.idempotencyKey}}",
+            "Fresha Booking Ref": "={{$json.freshaBookingRef}}",
+            "Client Name": "={{$json.clientName}}",
+            "Customer Contact": "={{$json.customerContact}}",
+            "Contact Match Strength": "={{$json.contactMatchStrength}}",
+            "Service": "={{$json.service}}",
+            "Staff Name": "={{$json.staffName}}",
+            "Appointment Date": "={{$json.bookingDate}}",
+            "Appointment Time": "={{$json.bookingTime}}",
+            "Status": "={{$json.status}}",
+            "Requires Human Review": "={{$json.requiresHumanReview}}",
+            "Review Reason": "={{$json.reviewReason}}",
+            "Deposit Amount": "={{$json.depositAmount}}",
+            "Deposit Currency": "={{$json.depositCurrency}}",
+            "Payment Method": "={{$json.paymentMethod}}",
+            "Created At": "={{$json.createdAt}}",
+            "Updated At": "={{$json.updatedAt}}",
+            "Source": "={{$json.source}}"
+          },
+          "matchingColumns": [
+            "Booking Reference"
+          ]
+        }
       },
       "id": "log-new-booking-01",
       "name": "Log New Booking (AWAITING_DEPOSIT)",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [600, -600],
-      "notes": "Append row: Booking Reference, Client Name, Service, Appointment Date, Appointment Time, Status, Deposit Amount, Payment Method, Deposit Request Sent At, Reminder Sent At, Proof Received At, Verified At, Verified By, Verification Result, Confirmation Sent At, Notes, Source. TO_VALIDATE: real Sheet ID needed post-import."
+      "position": [
+        600,
+        -600
+      ],
+      "notes": "Append row for a freshly parsed, non-duplicate new booking. Column headers must match the real sheet exactly - verify on import (TO_VALIDATE, same as sheetId below). See docs/mehua-deposit-concierge-spec.md Booking Log schema."
     },
     {
       "parameters": {
@@ -126,7 +181,10 @@
       "name": "Render Deposit Request Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [860, -600],
+      "position": [
+        860,
+        -600
+      ],
       "notes": "TEMPORARY — OWNER WORDING TO VALIDATE. Do not present as Mehua's existing wording."
     },
     {
@@ -140,38 +198,74 @@
       "name": "Notify Owner - Deposit Instructions",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2,
-      "position": [1120, -600],
+      "position": [
+        1120,
+        -600
+      ],
       "notes": "Sends the drafted WhatsApp text to the owner's own inbox so she can copy-paste and send it herself. n8n does not send WhatsApp directly on the free Business App tier."
     },
     {
       "parameters": {
         "operation": "update",
         "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:Q",
+        "range": "Booking Log!A:AB",
         "columnToMatchOn": "Booking Reference",
-        "valueToMatchOn": "={{$json.bookingRef}}",
+        "valueToMatchOn": "={{$json.bookingReference}}",
         "options": {}
       },
       "id": "update-deposit-sent-01",
       "name": "Update - Deposit Request Sent At",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [1380, -600],
+      "position": [
+        1380,
+        -600
+      ],
       "notes": "Sets Deposit Request Sent At = now. Status stays AWAITING_DEPOSIT."
     },
     {
       "parameters": {
         "operation": "append",
         "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:Q",
-        "options": {}
+        "range": "Booking Log!A:AB",
+        "options": {},
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Booking Reference": "={{$json.bookingReference}}",
+            "Client ID": "={{$json.config.client_id}}",
+            "Idempotency Key": "={{$json.idempotencyKey}}",
+            "Fresha Booking Ref": "={{$json.freshaBookingRef}}",
+            "Client Name": "={{$json.clientName}}",
+            "Customer Contact": "={{$json.customerEmail || $json.customerPhone}}",
+            "Contact Match Strength": "={{$json.contactMatchStrength}}",
+            "Service": "={{$json.service}}",
+            "Staff Name": "={{$json.staffName}}",
+            "Appointment Date": "={{$json.bookingDate}}",
+            "Appointment Time": "={{$json.bookingTime}}",
+            "Status": "NEEDS_HUMAN_REVIEW",
+            "Requires Human Review": "={{$json.requiresHumanReview}}",
+            "Review Reason": "={{$json.reviewReason}}",
+            "Deposit Currency": "={{$json.config.currency}}",
+            "Created At": "={{$now.toISO()}}",
+            "Updated At": "={{$now.toISO()}}",
+            "Notes": "={{$json.subject}}",
+            "Source": "={{$json.source}}"
+          },
+          "matchingColumns": [
+            "Booking Reference"
+          ]
+        }
       },
       "id": "log-unparseable-01",
       "name": "Log Unparseable Booking (NEEDS_HUMAN_REVIEW)",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [340, -380],
-      "notes": "Error handling: fail safely, never guess. Status = NEEDS_HUMAN_REVIEW, Notes = raw subject."
+      "position": [
+        340,
+        -380
+      ],
+      "notes": "Error handling: fail safely, never guess. Fires for parseOk=false from either an unparseable new_booking email (missing required fields) OR a recognized-but-out-of-scope Fresha email (cancellation / complete-form reminder) OR an unrecognized email format - reviewReason distinguishes which. Status = NEEDS_HUMAN_REVIEW."
     },
     {
       "parameters": {
@@ -184,7 +278,10 @@
       "name": "Notify Owner - Unparseable Booking Email",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2,
-      "position": [600, -380],
+      "position": [
+        600,
+        -380
+      ],
       "notes": "Never fails silently."
     },
     {
@@ -202,7 +299,10 @@
       "name": "Every 4 Hours - Check Overdue Deposits",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1,
-      "position": [-700, -40]
+      "position": [
+        -700,
+        -40
+      ]
     },
     {
       "parameters": {
@@ -212,21 +312,27 @@
       "name": "Load Mehua Config (Overdue Path)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-440, -40],
+      "position": [
+        -440,
+        -40
+      ],
       "notes": "Duplicate of Load Mehua Config (Email Path) — see that node's notes. Keep in sync with config/mehua-config.json."
     },
     {
       "parameters": {
         "operation": "read",
         "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:Q",
+        "range": "Booking Log!A:AB",
         "options": {}
       },
       "id": "read-sheet-overdue-01",
       "name": "Read Booking Log",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [-180, -40]
+      "position": [
+        -180,
+        -40
+      ]
     },
     {
       "parameters": {
@@ -236,7 +342,10 @@
       "name": "Filter Rows Needing Reminder (OVERDUE)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [80, -40]
+      "position": [
+        80,
+        -40
+      ]
     },
     {
       "parameters": {
@@ -246,7 +355,10 @@
       "name": "Render Deposit Reminder Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [340, -40],
+      "position": [
+        340,
+        -40
+      ],
       "notes": "TEMPORARY — OWNER WORDING TO VALIDATE. Do not send automatically to a real customer during Phase 1 — this drafts a message for the owner, it does not send WhatsApp."
     },
     {
@@ -260,13 +372,16 @@
       "name": "Notify Owner - Reminder Draft",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2,
-      "position": [600, -40]
+      "position": [
+        600,
+        -40
+      ]
     },
     {
       "parameters": {
         "operation": "update",
         "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:Q",
+        "range": "Booking Log!A:AB",
         "columnToMatchOn": "Booking Reference",
         "valueToMatchOn": "={{$json[\"Booking Reference\"]}}",
         "options": {}
@@ -275,7 +390,10 @@
       "name": "Update Status - OVERDUE",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [860, -40],
+      "position": [
+        860,
+        -40
+      ],
       "notes": "Sets Status=OVERDUE, Reminder Sent At=now. Only a human action can move a booking out of OVERDUE (via the verification form) or resolve it manually - this node never cancels a booking."
     },
     {
@@ -297,14 +415,17 @@
       "name": "Owner Form - Report Proof Received",
       "type": "n8n-nodes-base.formTrigger",
       "typeVersion": 1,
-      "position": [-700, 260],
+      "position": [
+        -700,
+        260
+      ],
       "notes": "IMPORTANT: receiving a screenshot does NOT mean the deposit is paid. This only moves the booking to AWAITING_MANUAL_VERIFICATION - never DEPOSIT_VERIFIED. No OCR/AI/screenshot analysis is used anywhere in this workflow."
     },
     {
       "parameters": {
         "operation": "update",
         "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:Q",
+        "range": "Booking Log!A:AB",
         "columnToMatchOn": "Booking Reference",
         "valueToMatchOn": "={{$json[\"Booking Reference\"]}}",
         "options": {}
@@ -313,7 +434,10 @@
       "name": "Update Status - AWAITING_MANUAL_VERIFICATION",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [-440, 260],
+      "position": [
+        -440,
+        260
+      ],
       "notes": "Sets Status=AWAITING_MANUAL_VERIFICATION, Proof Received At=now. PROOF_RECEIVED is logged as this timestamp rather than a separate durable status, since nothing else happens between the two in this flow - see docs/mehua-deposit-concierge-spec.md."
     },
     {
@@ -337,8 +461,12 @@
               "fieldType": "dropdown",
               "fieldOptions": {
                 "values": [
-                  { "option": "Verified" },
-                  { "option": "Rejected" }
+                  {
+                    "option": "Verified"
+                  },
+                  {
+                    "option": "Rejected"
+                  }
                 ]
               },
               "requiredField": true
@@ -351,7 +479,10 @@
       "name": "Owner Form - Review Deposit Verification",
       "type": "n8n-nodes-base.formTrigger",
       "typeVersion": 1,
-      "position": [-700, 520],
+      "position": [
+        -700,
+        520
+      ],
       "notes": "Human-in-the-loop checkpoint. No OCR, AI model, screenshot analysis or text recognition may ever set DEPOSIT_VERIFIED - only this explicit owner action."
     },
     {
@@ -362,7 +493,10 @@
       "name": "Load Mehua Config (Verify Path)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [-440, 520],
+      "position": [
+        -440,
+        520
+      ],
       "notes": "Duplicate of Load Mehua Config (Email Path) — see that node's notes. Keep in sync with config/mehua-config.json."
     },
     {
@@ -380,13 +514,16 @@
       "name": "Verification Result = Verified?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [-180, 520]
+      "position": [
+        -180,
+        520
+      ]
     },
     {
       "parameters": {
         "operation": "update",
         "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:Q",
+        "range": "Booking Log!A:AB",
         "columnToMatchOn": "Booking Reference",
         "valueToMatchOn": "={{$json[\"Booking Reference\"]}}",
         "options": {}
@@ -395,14 +532,17 @@
       "name": "Update Status - DEPOSIT_VERIFIED",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [80, 440],
+      "position": [
+        80,
+        440
+      ],
       "notes": "Sets Status=DEPOSIT_VERIFIED, Verified At=now, Verified By={{$json['Verified By']}}, Verification Result=Verified. This is the ONLY node in the whole workflow that can set DEPOSIT_VERIFIED, and it only runs after an explicit owner form submission."
     },
     {
       "parameters": {
         "operation": "read",
         "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:Q",
+        "range": "Booking Log!A:AB",
         "filters": {
           "columnToMatchOn": "Booking Reference"
         },
@@ -412,7 +552,10 @@
       "name": "Read Verified Row",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [340, 440],
+      "position": [
+        340,
+        440
+      ],
       "notes": "Re-fetches the full row (client name, service, date/time) to render the confirmation message, since the verification form only collects the booking reference."
     },
     {
@@ -423,7 +566,10 @@
       "name": "Render Confirmation Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [600, 440],
+      "position": [
+        600,
+        440
+      ],
       "notes": "TEMPORARY — OWNER WORDING TO VALIDATE. studio_location and deposit_policy are still TO_VALIDATE placeholders."
     },
     {
@@ -437,13 +583,16 @@
       "name": "Notify Owner - Final Confirmation",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2,
-      "position": [860, 440]
+      "position": [
+        860,
+        440
+      ]
     },
     {
       "parameters": {
         "operation": "update",
         "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:Q",
+        "range": "Booking Log!A:AB",
         "columnToMatchOn": "Booking Reference",
         "valueToMatchOn": "={{$json[\"Booking Reference\"]}}",
         "options": {}
@@ -452,7 +601,10 @@
       "name": "Update Status - DEPOSIT_REJECTED",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 3,
-      "position": [80, 620],
+      "position": [
+        80,
+        620
+      ],
       "notes": "Sets Status=DEPOSIT_REJECTED, Verification Result=Rejected, Verified By, Verified At=now. No automated message is sent to the client on rejection - this needs the owner's direct, human follow-up (payment mismatch, wrong amount, etc. all need judgement)."
     },
     {
@@ -466,93 +618,417 @@
       "name": "Notify Owner - Deposit Rejected",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2,
-      "position": [340, 620]
+      "position": [
+        340,
+        620
+      ]
+    },
+    {
+      "id": "read-dup-check-01",
+      "name": "Read Booking Log (Duplicate Check)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        180,
+        -760
+      ],
+      "parameters": {
+        "operation": "read",
+        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
+        "range": "Booking Log!A:AB",
+        "options": {}
+      },
+      "notes": "Reads the whole Booking Log before creating a new row, so 'Check Duplicate Booking' can compare the just-parsed booking's Idempotency Key against every existing row. Same read-then-compare pattern as 'Read Booking Log' (overdue check) - simple and correct at prototype volume; revisit if the sheet grows large."
+    },
+    {
+      "id": "check-dup-booking-01",
+      "name": "Check Duplicate Booking",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        340,
+        -760
+      ],
+      "parameters": {
+        "jsCode": "// The Google Sheets read above replaced $input with sheet rows, so the just-parsed booking is fetched back by node name rather than $input.\nconst current = $('Parsed OK?').first().json;\nconst rows = $input.all().map((i) => i.json);\nconst currentKey = current.idempotencyKey;\n\nconst match = rows.find(\n  (r) => currentKey && r['Idempotency Key'] && r['Idempotency Key'] === currentKey\n);\n\nreturn [{\n  json: {\n    ...current,\n    isDuplicate: Boolean(match),\n    duplicateOfBookingReference: match ? match['Booking Reference'] : null\n  }\n}];"
+      },
+      "notes": "Item 9/24 safety requirement: the same Fresha booking (same Idempotency Key - Fresha Booking Ref when available, otherwise the composite customer+date+time+service key) must never create two booking records, two deposit drafts, or two reminder lifecycles. See docs/mehua-deposit-concierge-spec.md idempotency section."
+    },
+    {
+      "id": "is-duplicate-if-01",
+      "name": "Is Duplicate?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        500,
+        -760
+      ],
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"isDuplicate\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "log-dup-ignored-01",
+      "name": "Log Duplicate Booking Ignored",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        -860
+      ],
+      "parameters": {
+        "jsCode": "// Terminal node - intentionally does NOT write to the Booking Log. Not writing a new row IS the correct behavior for a duplicate: no second booking record, no second deposit draft, no second reminder lifecycle. n8n's own execution log makes this branch observable (event: 'duplicate_booking_ignored') without touching the sheet.\nconst item = $input.item.json;\nreturn [{\n  json: {\n    event: 'duplicate_booking_ignored',\n    idempotencyKey: item.idempotencyKey,\n    duplicateOfBookingReference: item.duplicateOfBookingReference,\n    subject: item.subject\n  }\n}];"
+      },
+      "notes": "Terminal / no-op by design - see jsCode comment. Nothing connects onward from here."
     }
   ],
   "connections": {
     "New Fresha Booking Email": {
-      "main": [[{ "node": "Load Mehua Config (Email Path)", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Load Mehua Config (Email Path)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Load Mehua Config (Email Path)": {
-      "main": [[{ "node": "Parse Booking Details (PROVISIONAL)", "type": "main", "index": 0 }]]
-    },
-    "Parse Booking Details (PROVISIONAL)": {
-      "main": [[{ "node": "Parsed OK?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Parse Fresha Booking Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "TEST - Simulate New Booking (Dev Only)": {
-      "main": [[{ "node": "Load Mehua Config (Test Path)", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Load Mehua Config (Test Path)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Load Mehua Config (Test Path)": {
-      "main": [[{ "node": "Inject Simulated Booking Data (TEST)", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Inject Simulated Booking Data (TEST)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Inject Simulated Booking Data (TEST)": {
-      "main": [[{ "node": "Parsed OK?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Parsed OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Parsed OK?": {
       "main": [
-        [{ "node": "Compute Deposit Fields", "type": "main", "index": 0 }],
-        [{ "node": "Log Unparseable Booking (NEEDS_HUMAN_REVIEW)", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Read Booking Log (Duplicate Check)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Unparseable Booking (NEEDS_HUMAN_REVIEW)",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Compute Deposit Fields": {
-      "main": [[{ "node": "Log New Booking (AWAITING_DEPOSIT)", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Log New Booking (AWAITING_DEPOSIT)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Log New Booking (AWAITING_DEPOSIT)": {
-      "main": [[{ "node": "Render Deposit Request Message", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Render Deposit Request Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Render Deposit Request Message": {
-      "main": [[{ "node": "Notify Owner - Deposit Instructions", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Notify Owner - Deposit Instructions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Notify Owner - Deposit Instructions": {
-      "main": [[{ "node": "Update - Deposit Request Sent At", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Update - Deposit Request Sent At",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Log Unparseable Booking (NEEDS_HUMAN_REVIEW)": {
-      "main": [[{ "node": "Notify Owner - Unparseable Booking Email", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Notify Owner - Unparseable Booking Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Every 4 Hours - Check Overdue Deposits": {
-      "main": [[{ "node": "Load Mehua Config (Overdue Path)", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Load Mehua Config (Overdue Path)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Load Mehua Config (Overdue Path)": {
-      "main": [[{ "node": "Read Booking Log", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Read Booking Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Read Booking Log": {
-      "main": [[{ "node": "Filter Rows Needing Reminder (OVERDUE)", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Filter Rows Needing Reminder (OVERDUE)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Filter Rows Needing Reminder (OVERDUE)": {
-      "main": [[{ "node": "Render Deposit Reminder Message", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Render Deposit Reminder Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Render Deposit Reminder Message": {
-      "main": [[{ "node": "Notify Owner - Reminder Draft", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Notify Owner - Reminder Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Notify Owner - Reminder Draft": {
-      "main": [[{ "node": "Update Status - OVERDUE", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Update Status - OVERDUE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Owner Form - Report Proof Received": {
-      "main": [[{ "node": "Update Status - AWAITING_MANUAL_VERIFICATION", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Update Status - AWAITING_MANUAL_VERIFICATION",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Owner Form - Review Deposit Verification": {
-      "main": [[{ "node": "Load Mehua Config (Verify Path)", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Load Mehua Config (Verify Path)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Load Mehua Config (Verify Path)": {
-      "main": [[{ "node": "Verification Result = Verified?", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Verification Result = Verified?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Verification Result = Verified?": {
       "main": [
-        [{ "node": "Update Status - DEPOSIT_VERIFIED", "type": "main", "index": 0 }],
-        [{ "node": "Update Status - DEPOSIT_REJECTED", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Update Status - DEPOSIT_VERIFIED",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Status - DEPOSIT_REJECTED",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Update Status - DEPOSIT_VERIFIED": {
-      "main": [[{ "node": "Read Verified Row", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Read Verified Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Read Verified Row": {
-      "main": [[{ "node": "Render Confirmation Message", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Render Confirmation Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Render Confirmation Message": {
-      "main": [[{ "node": "Notify Owner - Final Confirmation", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Notify Owner - Final Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Update Status - DEPOSIT_REJECTED": {
-      "main": [[{ "node": "Notify Owner - Deposit Rejected", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Notify Owner - Deposit Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Fresha Booking Email": {
+      "main": [
+        [
+          {
+            "node": "Parsed OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Booking Log (Duplicate Check)": {
+      "main": [
+        [
+          {
+            "node": "Check Duplicate Booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Duplicate Booking": {
+      "main": [
+        [
+          {
+            "node": "Is Duplicate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Duplicate?": {
+      "main": [
+        [
+          {
+            "node": "Log Duplicate Booking Ignored",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Compute Deposit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,

@@ -66,11 +66,13 @@ assert(
 
 console.log("\n[2] Inject Simulated Booking Data (TEST)");
 out = runNode("Inject Simulated Booking Data (TEST)", out.map((o) => o.json));
-const bookingRef = out[0].json.bookingRef;
+const bookingRef = out[0].json.bookingReference;
 assert(out[0].json.clientName === "Test Customer", "clientName === 'Test Customer'");
 assert(out[0].json.service === "Classic Full Set", "service === 'Classic Full Set'");
 assert(out[0].json.parseOk === true, "parseOk === true (simulated booking always parses)");
-console.log("  bookingRef:", bookingRef);
+assert(out[0].json.emailKind === "new_booking", "emailKind === 'new_booking' (matches the real parser's output shape)");
+assert(typeof out[0].json.idempotencyKey === "string" && out[0].json.idempotencyKey.length > 0, "idempotencyKey is set (duplicate detection has something to compare)");
+console.log("  bookingReference:", bookingRef);
 
 console.log("\n[3] Compute Deposit Fields");
 out = runNode("Compute Deposit Fields", out.map((o) => o.json));
