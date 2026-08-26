@@ -81,13 +81,24 @@ One row per booking, `Booking Log!A:AB` (28 columns). Updated 25 Aug 2026 to add
 
 The two Log nodes (`Log New Booking`, `Log Unparseable Booking`) map these explicitly by column header (`columns.mappingMode: defineBelow`) rather than relying on key-name auto-matching. **TO_VALIDATE on import:** the mapping assumes the real sheet's header row uses these exact column names - verify and adjust if Joshua's actual sheet differs.
 
+The two append nodes cover 20 of the 28 columns. The remaining eight are lifecycle state written later by the update nodes, each matching on `Booking Reference`: `Deposit Request Sent At` (`Update - Deposit Request Sent At`), `Reminder Sent At` (`Update Status - OVERDUE`), `Proof Received At` (`Update Status - AWAITING_MANUAL_VERIFICATION`), `Verified At` / `Verified By` / `Verification Result` (`Update Status - DEPOSIT_VERIFIED` and `Update Status - DEPOSIT_REJECTED`), `Confirmation Sent At` (`Update - Confirmation Sent At`), and `Notes` (`Log Unparseable Booking`). `tests/workflow-integrity.test.js` asserts that every one of the 28 columns has a node that can write it, so this cannot silently regress. (Until 26 Aug 2026 the update nodes mapped *no* columns at all and none of these were ever written - see `workflows/README.md`.)
+
 ### Duplicate detection
 
 Before a parsed `new_booking` is logged, `Read Booking Log (Duplicate Check)` reads the whole sheet and `Check Duplicate Booking` compares the new booking's `Idempotency Key` against every existing row's `Idempotency Key`. If a match is found, `Is Duplicate?` routes to `Log Duplicate Booking Ignored` - a terminal, intentionally no-op node (not writing a new row is the correct behavior; n8n's own execution log makes the branch observable). No match routes to `Compute Deposit Fields` exactly as before. This satisfies the requirement that the same Fresha booking can never create two booking records, two deposit drafts, or two reminder lifecycles.
 
 ## Testing
 
-`tests/mehua-lifecycle.test.js` runs the exact JavaScript from the workflow's Code nodes (extracted from `workflows/mehua-deposit-concierge.n8n.json`, not reimplemented) through a small mock of n8n's Code-node context, and walks the full lifecycle end to end: simulate a booking → compute deposit fields (asserts Rs 500 / Juice) → render the deposit request → simulate the owner reporting proof → simulate the owner verifying → render the confirmation. It asserts the placeholders (Juice payment details, studio location, deposit policy) come through honestly rather than being silently invented. Run it with `node tests/mehua-lifecycle.test.js` — no n8n instance, real inbox, real customer or real payment required. Current status: passes.
+Run everything with `npm test` (nothing to install, and no n8n instance, real inbox, real customer or real payment required). Four suites:
+
+- `scripts/validate-compose.js` — validates `docker-compose.yml` (via `docker compose config` when Docker is installed, else a YAML parse), that every `${VAR}` it reads is documented in `.env.example`, that `.env` is gitignored and untracked, and that the persistence / restart / `127.0.0.1`-only guarantees still hold.
+- `tests/workflow-integrity.test.js` — structural validation of the workflow JSON: connections resolve, no orphan nodes, Code nodes parse, Google Sheets nodes use the current node schema (`typeVersion >= 4`, resource locators, real column mappings), all 28 Booking Log columns have a node that can write them, every cross-node `$('…')` reference exists, the four embedded config copies match `config/mehua-config.json`, and no credentials or secrets are committed.
+- `tests/fresha-parser.test.js` — the parser and duplicate check against the three real (sanitized) Fresha fixtures plus malformed, unknown-format and missing-required-field cases.
+- `tests/mehua-lifecycle.test.js` — the whole lifecycle, driven through the workflow's **own** Code nodes *and* its **own** Google Sheets column mappings against an in-memory 28-column Booking Log (`tests/lib/n8n-mock.js`, `tests/lib/lifecycle.js`). A real Fresha "New appointment" email is parsed → deduplicated → logged `AWAITING_DEPOSIT` (asserts Rs 500 / Juice) → deposit request drafted and stamped → escalated to `OVERDUE` past the 48h window → proof reported → verified by explicit owner action → confirmation drafted and stamped. It also asserts that the reminder cooldown suppresses a repeat reminder, that a verified booking is never chased, that re-delivering the same email a second and third time creates no new row, that a recognized cancellation writes nothing at all, that an unrecognized email lands as `NEEDS_HUMAN_REVIEW` with a stated reason and no minted booking reference, and that a rejected deposit drafts no confirmation. Placeholders (Juice details, studio location, deposit policy) are asserted to come through honestly rather than being silently invented.
+
+Current status: all four suites pass. `npm run demo` walks the same lifecycle with human-readable output — see "Demo" in the root README.
+
+Because the lifecycle test executes the workflow's real Sheets column mappings rather than a reimplementation, a change to the workflow that breaks the deposit lifecycle now fails the test suite. It still does not prove the workflow runs inside n8n — see `workflows/README.md`.
 
 ## Real Fresha email analysis (25 Aug 2026 — 3 genuine samples)
 
@@ -212,7 +223,8 @@ This is explicitly weaker than a genuine provider booking ID: a client who is re
 4. **Studio location and deposit/cancellation policy wording** — placeholders in `config/mehua-config.json`, not yet supplied.
 5. **Reminder/escalation timing** — `reminder_escalation_hours: 48` in the config is from the source research ("no proof after 48h"), not yet confirmed directly with Méhua; the 20-hour reminder resend cooldown is our own assumption to avoid spamming the owner, not sourced from any document.
 6. **Owner notification email address** — placeholder in the config, not yet supplied.
-7. **Google Sheet ID and exact column mapping** — the workflow references a placeholder sheet ID; needs to be created and wired up once imported into a real n8n instance.
+7. **Google Sheet ID and exact column mapping** — every Google Sheets node references the literal placeholder `PLACEHOLDER_SET_MEHUA_SHEET_ID`, with the tab name set to `Booking Log`. Create the sheet with the 28 headers above, then either find-and-replace that placeholder before importing or pick the document from n8n's "From list" selector on each node. Exact steps: "Workflow setup" in the root README.
+8. **Which mailbox n8n reads** — related to item 2: Méhua's own Gmail via OAuth, or a forwarding rule copying Fresha mail into a mailbox the agency controls. The second keeps the client boundary cleaner (the agency never holds the client's mailbox credentials) and is the recommended default, but it has not been agreed with her.
 
 ## What this prototype deliberately does NOT do
 

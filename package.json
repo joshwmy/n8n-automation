@@ -1,0 +1,18 @@
+{
+  "name": "automation-agency",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SME automation agency workspace. Pilot: Mehua Lashes booking & deposit concierge (n8n + Fresha email parsing + Google Sheets).",
+  "scripts": {
+    "test": "node scripts/run-tests.js",
+    "test:parser": "node tests/fresha-parser.test.js",
+    "test:lifecycle": "node tests/mehua-lifecycle.test.js",
+    "test:workflow": "node tests/workflow-integrity.test.js",
+    "validate:compose": "node scripts/validate-compose.js",
+    "demo": "node scripts/demo.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED"
+}

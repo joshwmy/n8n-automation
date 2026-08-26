@@ -12,7 +12,7 @@
         },
         "simple": false,
         "filters": {
-          "q": "PLACEHOLDER_TO_VALIDATE: e.g. from:noreply@fresha.com subject:(booking OR confirmed)"
+          "q": "from:mail@updates.fresha.com"
         },
         "options": {}
       },
@@ -131,8 +131,6 @@
     {
       "parameters": {
         "operation": "append",
-        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:AB",
         "options": {},
         "columns": {
           "mappingMode": "defineBelow",
@@ -158,15 +156,24 @@
             "Updated At": "={{$json.updatedAt}}",
             "Source": "={{$json.source}}"
           },
-          "matchingColumns": [
-            "Booking Reference"
-          ]
+          "matchingColumns": [],
+          "schema": []
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PLACEHOLDER_SET_MEHUA_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Booking Log"
         }
       },
       "id": "log-new-booking-01",
       "name": "Log New Booking (AWAITING_DEPOSIT)",
       "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 3,
+      "typeVersion": 4.5,
       "position": [
         600,
         -600
@@ -175,7 +182,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Uses config.templates.deposit_request_template — see config/mehua-config.json.\nfunction renderTemplate(template, data) {\n  return template.replace(/{{\\s*([a-zA-Z0-9_]+)\\s*}}/g, (_, key) => {\n    return (data[key] !== undefined && data[key] !== null) ? data[key] : `{{${key}}}`;\n  });\n}\n\nconst item = $input.item.json;\nconst config = item.config;\n\nconst data = {\n  customer_name: item.clientName,\n  service: item.service,\n  booking_date: item.bookingDate,\n  booking_time: item.bookingTime,\n  deposit_amount: item.depositAmount,\n  payment_method: item.paymentMethod,\n  juice_payment_details: item.juicePaymentDetails\n};\n\nconst messageDraft = renderTemplate(config.templates.deposit_request_template, data);\n\nreturn [{ json: { ...item, messageDraft } }];"
+        "jsCode": "// Uses config.templates.deposit_request_template — see config/mehua-config.json.\nfunction renderTemplate(template, data) {\n  return template.replace(/{{\\s*([a-zA-Z0-9_]+)\\s*}}/g, (_, key) => {\n    return (data[key] !== undefined && data[key] !== null) ? data[key] : `{{${key}}}`;\n  });\n}\n\n// Sourced from Compute Deposit Fields by name, not $input: the Google Sheets\n// append node sits between them and its output does not carry these fields.\nconst item = $('Compute Deposit Fields').item.json;\nconst config = item.config;\n\nconst data = {\n  customer_name: item.clientName,\n  service: item.service,\n  booking_date: item.bookingDate,\n  booking_time: item.bookingTime,\n  deposit_amount: item.depositAmount,\n  payment_method: item.paymentMethod,\n  juice_payment_details: item.juicePaymentDetails\n};\n\nconst messageDraft = renderTemplate(config.templates.deposit_request_template, data);\n\nreturn [{ json: { ...item, messageDraft } }];"
       },
       "id": "render-deposit-request-01",
       "name": "Render Deposit Request Message",
@@ -207,16 +214,34 @@
     {
       "parameters": {
         "operation": "update",
-        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:AB",
-        "columnToMatchOn": "Booking Reference",
-        "valueToMatchOn": "={{$json.bookingReference}}",
-        "options": {}
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PLACEHOLDER_SET_MEHUA_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Booking Log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Booking Reference": "={{ $('Compute Deposit Fields').item.json.bookingReference }}",
+            "Deposit Request Sent At": "={{ $now.toISO() }}",
+            "Updated At": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [
+            "Booking Reference"
+          ],
+          "schema": []
+        }
       },
       "id": "update-deposit-sent-01",
       "name": "Update - Deposit Request Sent At",
       "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 3,
+      "typeVersion": 4.5,
       "position": [
         1380,
         -600
@@ -226,8 +251,6 @@
     {
       "parameters": {
         "operation": "append",
-        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:AB",
         "options": {},
         "columns": {
           "mappingMode": "defineBelow",
@@ -252,15 +275,24 @@
             "Notes": "={{$json.subject}}",
             "Source": "={{$json.source}}"
           },
-          "matchingColumns": [
-            "Booking Reference"
-          ]
+          "matchingColumns": [],
+          "schema": []
+        },
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PLACEHOLDER_SET_MEHUA_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Booking Log"
         }
       },
       "id": "log-unparseable-01",
       "name": "Log Unparseable Booking (NEEDS_HUMAN_REVIEW)",
       "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 3,
+      "typeVersion": 4.5,
       "position": [
         340,
         -380
@@ -321,14 +353,22 @@
     {
       "parameters": {
         "operation": "read",
-        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:AB",
-        "options": {}
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PLACEHOLDER_SET_MEHUA_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Booking Log"
+        }
       },
       "id": "read-sheet-overdue-01",
       "name": "Read Booking Log",
       "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 3,
+      "typeVersion": 4.5,
       "position": [
         -180,
         -40
@@ -380,16 +420,35 @@
     {
       "parameters": {
         "operation": "update",
-        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:AB",
-        "columnToMatchOn": "Booking Reference",
-        "valueToMatchOn": "={{$json[\"Booking Reference\"]}}",
-        "options": {}
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PLACEHOLDER_SET_MEHUA_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Booking Log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Booking Reference": "={{ $('Filter Rows Needing Reminder (OVERDUE)').item.json['Booking Reference'] }}",
+            "Status": "OVERDUE",
+            "Reminder Sent At": "={{ $now.toISO() }}",
+            "Updated At": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [
+            "Booking Reference"
+          ],
+          "schema": []
+        }
       },
       "id": "update-status-overdue-01",
       "name": "Update Status - OVERDUE",
       "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 3,
+      "typeVersion": 4.5,
       "position": [
         860,
         -40
@@ -424,16 +483,35 @@
     {
       "parameters": {
         "operation": "update",
-        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:AB",
-        "columnToMatchOn": "Booking Reference",
-        "valueToMatchOn": "={{$json[\"Booking Reference\"]}}",
-        "options": {}
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PLACEHOLDER_SET_MEHUA_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Booking Log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Booking Reference": "={{ $json['Booking Reference'] }}",
+            "Status": "AWAITING_MANUAL_VERIFICATION",
+            "Proof Received At": "={{ $now.toISO() }}",
+            "Updated At": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [
+            "Booking Reference"
+          ],
+          "schema": []
+        }
       },
       "id": "update-awaiting-verification-01",
       "name": "Update Status - AWAITING_MANUAL_VERIFICATION",
       "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 3,
+      "typeVersion": 4.5,
       "position": [
         -440,
         260
@@ -522,16 +600,37 @@
     {
       "parameters": {
         "operation": "update",
-        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:AB",
-        "columnToMatchOn": "Booking Reference",
-        "valueToMatchOn": "={{$json[\"Booking Reference\"]}}",
-        "options": {}
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PLACEHOLDER_SET_MEHUA_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Booking Log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Booking Reference": "={{ $json['Booking Reference'] }}",
+            "Status": "DEPOSIT_VERIFIED",
+            "Verified At": "={{ $now.toISO() }}",
+            "Verified By": "={{ $json['Verified By'] }}",
+            "Verification Result": "={{ $json['Verification Result'] }}",
+            "Updated At": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [
+            "Booking Reference"
+          ],
+          "schema": []
+        }
       },
       "id": "update-verified-01",
       "name": "Update Status - DEPOSIT_VERIFIED",
       "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 3,
+      "typeVersion": 4.5,
       "position": [
         80,
         440
@@ -541,17 +640,32 @@
     {
       "parameters": {
         "operation": "read",
-        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:AB",
-        "filters": {
-          "columnToMatchOn": "Booking Reference"
+        "options": {
+          "returnFirstMatch": true
         },
-        "options": {}
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PLACEHOLDER_SET_MEHUA_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Booking Log"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Booking Reference",
+              "lookupValue": "={{ $('Owner Form - Review Deposit Verification').item.json['Booking Reference'] }}"
+            }
+          ]
+        }
       },
       "id": "read-verified-row-01",
       "name": "Read Verified Row",
       "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 3,
+      "typeVersion": 4.5,
       "position": [
         340,
         440
@@ -591,16 +705,37 @@
     {
       "parameters": {
         "operation": "update",
-        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:AB",
-        "columnToMatchOn": "Booking Reference",
-        "valueToMatchOn": "={{$json[\"Booking Reference\"]}}",
-        "options": {}
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PLACEHOLDER_SET_MEHUA_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Booking Log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Booking Reference": "={{ $json['Booking Reference'] }}",
+            "Status": "DEPOSIT_REJECTED",
+            "Verified At": "={{ $now.toISO() }}",
+            "Verified By": "={{ $json['Verified By'] }}",
+            "Verification Result": "={{ $json['Verification Result'] }}",
+            "Updated At": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [
+            "Booking Reference"
+          ],
+          "schema": []
+        }
       },
       "id": "update-rejected-01",
       "name": "Update Status - DEPOSIT_REJECTED",
       "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 3,
+      "typeVersion": 4.5,
       "position": [
         80,
         620
@@ -627,16 +762,24 @@
       "id": "read-dup-check-01",
       "name": "Read Booking Log (Duplicate Check)",
       "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 3,
+      "typeVersion": 4.5,
       "position": [
         180,
         -760
       ],
       "parameters": {
         "operation": "read",
-        "sheetId": "PLACEHOLDER_TO_VALIDATE_SHEET_ID",
-        "range": "Booking Log!A:AB",
-        "options": {}
+        "options": {},
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PLACEHOLDER_SET_MEHUA_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Booking Log"
+        }
       },
       "notes": "Reads the whole Booking Log before creating a new row, so 'Check Duplicate Booking' can compare the just-parsed booking's Idempotency Key against every existing row. Same read-then-compare pattern as 'Read Booking Log' (overdue check) - simple and correct at prototype volume; revisit if the sheet grows large."
     },
@@ -722,6 +865,42 @@
         "jsCode": "// Terminal node - intentionally does NOT write to the Booking Log and does\n// NOT set Requires Human Review. A recognized Format B email (cancellation /\n// complete-form reminder) is expected, in-scope-for-Fresha but out-of-scope-for-Phase-1\n// input, not a failure. No booking, no deposit, no reminder is created. n8n's\n// own execution log makes this branch observable without writing to the sheet.\nconst item = $input.item.json;\nreturn [{\n  json: {\n    event: 'recognized_non_booking_event_ignored',\n    emailKind: item.emailKind,\n    freshaBookingRef: item.freshaBookingRef,\n    reviewReason: item.reviewReason,\n    subject: item.subject\n  }\n}];"
       },
       "notes": "Terminal / no-op by design - see jsCode comment. Nothing connects onward from here."
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PLACEHOLDER_SET_MEHUA_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Booking Log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Booking Reference": "={{ $('Read Verified Row').item.json['Booking Reference'] }}",
+            "Confirmation Sent At": "={{ $now.toISO() }}",
+            "Updated At": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [
+            "Booking Reference"
+          ],
+          "schema": []
+        },
+        "options": {}
+      },
+      "id": "update-confirmation-sent-at",
+      "name": "Update - Confirmation Sent At",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        440
+      ]
     }
   ],
   "connections": {
@@ -1082,6 +1261,17 @@
           }
         ]
       ]
+    },
+    "Notify Owner - Final Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Update - Confirmation Sent At",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
@@ -1090,6 +1280,6 @@
   },
   "pinData": {},
   "meta": {
-    "note": "Prototype scaffold, not yet validated against a live n8n instance or a real Fresha email. See workflows/README.md and docs/mehua-deposit-concierge-spec.md. Every TO_VALIDATE item needs real input from Joshua/Mehua before this is trustworthy. Deposit amount (Rs 500) and payment method (Juice) ARE confirmed - only the Juice account details, message wording, policy text, studio location and Fresha email format remain placeholders."
+    "note": "Validated structurally (npm test: connections, Code-node parsing, Google Sheets node schema and column mappings, all 28 Booking Log columns writable, config copies in sync, no committed credentials) and exercised end-to-end offline via tests/mehua-lifecycle.test.js and scripts/demo.js. NOT yet imported into a live n8n instance: credential binding, resource-locator resolution against a real sheet, the Gmail Trigger against a real inbox and the two form-trigger URLs are unproven. Confirmed: deposit Rs 500, method Juice, Juice details, and the real Fresha email formats. Still placeholders: Google Sheet ID (PLACEHOLDER_SET_MEHUA_SHEET_ID), owner notification email, studio location, deposit/cancellation policy wording, message wording, and the 48h/20h reminder timings. See docs/mehua-deposit-concierge-spec.md and workflows/README.md."
   }
 }

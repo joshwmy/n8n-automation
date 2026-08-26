@@ -27,6 +27,21 @@ services:
       - N8N_SECURE_COOKIE=${N8N_SECURE_COOKIE:-false}
     volumes:
       - n8n_data:/home/node/.n8n
+    healthcheck:
+      # Uses the image's own node binary - the n8n image ships no curl/wget.
+      # start_period covers first boot, where n8n runs its DB migrations
+      # before it starts listening; failures in that window are not counted.
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://127.0.0.1:5678/healthz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
 
 volumes:
   n8n_data:
