@@ -14,10 +14,33 @@ buys the outcome, not the workflow file.
 
 ## Validation status
 
-Last validated **26 Aug 2026** against a real **n8n 2.34.4** (`n8n-nodes-base`
-2.34.2) — the same version `.env.example` pins — run locally from npm.
+Last validated **27 Aug 2026** against **n8n 2.34.4** running in Docker
+(Docker 29.7.2, Compose v5.4.0, WSL2 backend) — the version `.env.example`
+pins. Every workflow result below was confirmed twice: first against an
+npm-installed n8n 2.34.4, then again inside the container, with identical
+results.
 
-**Verified by actually running it:**
+**Docker host:**
+
+| | Result |
+|---|---|
+| `docker compose config` | Passes (real Compose v5.4.0, exit 0) |
+| Image pull + `docker compose up -d` | Succeeds — `docker.n8n.io/n8nio/n8n:2.34.4` |
+| Container stays up | `Up (healthy)`, `RestartCount=0`, no restart loop |
+| Healthcheck | Passes |
+| `http://localhost:5678` | HTTP 200; `/healthz` returns `{"status":"ok"}` |
+| Port binding | `127.0.0.1:5678->5678/tcp` — not reachable from the LAN |
+| n8n version in container | 2.34.4 |
+| SQLite location | `/home/node/.n8n/database.sqlite`, inside the named volume |
+| Named-volume persistence | Verified — see below |
+
+Persistence was proved by destroying the container, not merely restarting it:
+the workflow was imported, then `docker compose down` (**no** `-v`) *removed*
+the container, then `docker compose up -d` created a new one with a different
+container ID — and `n8n list:workflow` still returned the imported workflow,
+from volume `automationagency_n8n_data`.
+
+**Verified by actually running the workflow:**
 
 | | Result |
 |---|---|
@@ -37,26 +60,36 @@ Branch runs used stubs **only** for the two external services (Google Sheets
 API, Gmail send). Every Code node, IF node, connection and expression was the
 real one, unmodified.
 
-**Not yet verified — needs Docker, which is not installable on this machine
-without your input:**
+**Still not verified — needs live Google credentials:**
 
-- `docker compose config`, `docker compose up -d`, container health
-- persistence across `docker compose down && up` via the `n8n_data` **named volume**
-- the Gmail Trigger against a real inbox, and the two form-trigger URLs
-
-This is Windows 11 **Home**, so Docker Desktop needs the WSL2 backend, and WSL
-is not installed. To unblock, in an **Administrator** PowerShell:
-
-```powershell
-wsl --install                                        # then reboot
-winget install --id Docker.DockerDesktop --exact     # UAC prompt
-```
-
-Launch Docker Desktop once and wait for **"Engine running"**.
+- the Google Sheets nodes against a real spreadsheet (every run so far stops at
+  *"Node does not have any credentials set"*, which is the credential boundary,
+  not a defect)
+- the Gmail Trigger against a real inbox
+- the Gmail send nodes — `owner_notification_email` is still the
+  `TO_VALIDATE_OWNER_EMAIL` placeholder, and real n8n correctly rejects it with
+  *"Invalid email address"*
+- the two owner form-trigger URLs, which only exist while the workflow is active
 
 **Needs your credentials / business configuration** — see the sections below:
 Gmail OAuth, Google Sheets OAuth, the production Sheet ID, `owner_notification_email`,
 studio location, policy wording, final message wording.
+
+### Container log messages that are expected
+
+`docker compose logs` prints three things on a healthy instance; none indicate
+a problem with this pilot:
+
+- **"Failed to start Python task runner … Python 3 is missing"** — n8n only
+  needs this for Python Code nodes. Every Code node here is JavaScript, and
+  `Registered runner "JS Task Runner"` appears in the same log.
+- **Deprecation notices** (`N8N_UNVERIFIED_PACKAGES_ENABLED`,
+  `N8N_RUNNERS_TASK_TIMEOUT`, `N8N_COMPRESSION_NODE_*`) — advance warning that
+  defaults change in a *future* n8n version. The image tag is pinned, so
+  nothing changes until `N8N_VERSION` is bumped; re-read them at that point.
+- **"Last session crashed"** — only appears if the container was killed rather
+  than shut down cleanly (for example a `docker compose up` interrupted
+  mid-start). Harmless on the next clean boot.
 
 ## Structure
 
