@@ -12,6 +12,52 @@ reminder/escalation path, and an owner-verified confirmation. Full spec:
 n8n is **agency infrastructure** — we run it, the client does not. The client
 buys the outcome, not the workflow file.
 
+## Validation status
+
+Last validated **26 Aug 2026** against a real **n8n 2.34.4** (`n8n-nodes-base`
+2.34.2) — the same version `.env.example` pins — run locally from npm.
+
+**Verified by actually running it:**
+
+| | Result |
+|---|---|
+| Workflow imports into real n8n | Yes — `n8n import:workflow`, no errors |
+| All 39 nodes load | Yes — every node type + `typeVersion` accepted |
+| n8n migrations on the workflow | **None.** n8n re-exported all 39 nodes with parameters and `typeVersion` byte-identical, so the file in git *is* the canonical accepted form |
+| Google Sheets nodes (`typeVersion 4.5`, resource locators, column mappings) | Accepted and resolved at runtime |
+| Expressions (`$json[...]`, `$now.toISO()`, `$('Node').item.json[...]`) | All resolved — no red/invalid expressions |
+| TEST - Simulate New Booking path | Ran to completion |
+| Overdue reminder path | Ran to completion, escalated to `OVERDUE` |
+| Verification → confirmation path | Ran to completion, wrote `Confirmation Sent At` |
+| Idempotency on rerun | Verified — the rerun routed to `Log Duplicate Booking Ignored`; `Log New Booking` never executed |
+| Timezone | Timestamps written as `+04:00` (Indian/Mauritius) |
+| n8n SQLite persistence across process restarts | Verified |
+
+Branch runs used stubs **only** for the two external services (Google Sheets
+API, Gmail send). Every Code node, IF node, connection and expression was the
+real one, unmodified.
+
+**Not yet verified — needs Docker, which is not installable on this machine
+without your input:**
+
+- `docker compose config`, `docker compose up -d`, container health
+- persistence across `docker compose down && up` via the `n8n_data` **named volume**
+- the Gmail Trigger against a real inbox, and the two form-trigger URLs
+
+This is Windows 11 **Home**, so Docker Desktop needs the WSL2 backend, and WSL
+is not installed. To unblock, in an **Administrator** PowerShell:
+
+```powershell
+wsl --install                                        # then reboot
+winget install --id Docker.DockerDesktop --exact     # UAC prompt
+```
+
+Launch Docker Desktop once and wait for **"Engine running"**.
+
+**Needs your credentials / business configuration** — see the sections below:
+Gmail OAuth, Google Sheets OAuth, the production Sheet ID, `owner_notification_email`,
+studio location, policy wording, final message wording.
+
 ## Structure
 
 - `workflows/` — exported n8n workflow JSON (version-controlled source of truth;
@@ -114,11 +160,21 @@ The workflow is **not** auto-provisioned — import it once:
 3. Fill in the placeholders below.
 4. Attach credentials (below), then **Activate** the workflow.
 
+The file carries a top-level `id`, so it also imports from the CLI:
+
+```bash
+n8n import:workflow --input=workflows/mehua-deposit-concierge.n8n.json
+```
+
+(The CLI importer requires that `id`; the UI importer does not.)
+
 ### Google Sheet
 
 Create a Google Sheet with a tab named exactly **`Booking Log`**, whose first
-row is the 28 column headers listed in the spec's "Google Sheet — booking log
-schema" section, in that order.
+row is the 28 column headers in `config/booking-log-headers.csv`. Paste that
+line into cell A1 and use **Data → Split text to columns** — don't retype it.
+That file is generated from the same schema the workflow and tests use, and
+`npm test` fails if the two ever drift.
 
 Every Google Sheets node in the workflow points at the literal placeholder
 `PLACEHOLDER_SET_MEHUA_SHEET_ID`. Replace it with your sheet's ID (the long

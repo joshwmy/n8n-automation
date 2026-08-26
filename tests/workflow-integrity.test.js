@@ -220,6 +220,19 @@ assert(
 );
 
 // --------------------------------------------------------------------------
+console.log("\n[sheets] the copy-paste header row matches the schema");
+
+// config/booking-log-headers.csv exists so the Booking Log header row can be
+// pasted in rather than retyped. It must never drift from SHEET_COLUMNS.
+const headerCsv = fs
+  .readFileSync(path.join(__dirname, "..", "config", "booking-log-headers.csv"), "utf8")
+  .trim();
+assert(
+  headerCsv === SHEET_COLUMNS.join(","),
+  "config/booking-log-headers.csv matches the 28-column schema exactly"
+);
+
+// --------------------------------------------------------------------------
 console.log("\n[expressions] cross-node references point at real nodes");
 
 const workflowJson = fs.readFileSync(h.WORKFLOW_PATH, "utf8");

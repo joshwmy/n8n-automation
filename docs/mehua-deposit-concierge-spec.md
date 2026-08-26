@@ -98,6 +98,10 @@ Run everything with `npm test` (nothing to install, and no n8n instance, real in
 
 Current status: all four suites pass. `npm run demo` walks the same lifecycle with human-readable output — see "Demo" in the root README.
 
+### Validated against real n8n (26 Aug 2026)
+
+The offline suites above were confirmed against an actual **n8n 2.34.4** instance: the workflow imported cleanly, all 39 nodes loaded, and n8n re-exported every node with parameters and `typeVersion` unchanged — so no n8n migration is pending and the committed JSON is the canonical accepted form. The TEST booking path, the overdue reminder path and the verification/confirmation path each ran to completion, with stubs only for the Google Sheets API and Gmail send; a rerun of the same booking routed to `Log Duplicate Booking Ignored` without writing a second row. Timestamps came out in `Indian/Mauritius` (`+04:00`). The full result table is in the root README under "Validation status". Docker (container startup and named-volume persistence) and the two live Google credentials remain unverified.
+
 Because the lifecycle test executes the workflow's real Sheets column mappings rather than a reimplementation, a change to the workflow that breaks the deposit lifecycle now fails the test suite. It still does not prove the workflow runs inside n8n — see `workflows/README.md`.
 
 ## Real Fresha email analysis (25 Aug 2026 — 3 genuine samples)
