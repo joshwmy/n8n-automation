@@ -29,7 +29,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// SOURCE OF TRUTH: config/mehua-config.json — keep this object in sync with that file.\nconst config = {\n  client_id: \"mehua_lashes\",\n  business_name: \"Mehua Lashes\",\n  currency: \"MUR\",\n  deposit: {\n    required: true,\n    amount: 500,\n    method: \"Juice\",\n    payment_details: \"5902 8505 (MCB Juice)\"\n  },\n  studio_location: \"TO_VALIDATE_STUDIO_LOCATION\",\n  deposit_policy: \"TO_VALIDATE_DEPOSIT_POLICY\",\n  cancellation_policy: \"TO_VALIDATE_CANCELLATION_POLICY\",\n  owner_notification_email: \"TO_VALIDATE_OWNER_EMAIL\",\n  reminder_escalation_hours: 48,\n  reminder_resend_cooldown_hours: 20,\n  templates: {\n    deposit_request_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}! Your appointment for {{service}} on {{booking_date}} at {{booking_time}} has been received.\\nA deposit of Rs {{deposit_amount}} via {{payment_method}} is required to secure your booking.\\n{{payment_method}} payment details: {{juice_payment_details}}\\nOnce you've made the payment, please send your payment screenshot here.\\nYour booking will only be confirmed after the payment has been manually verified.\",\n    deposit_reminder_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}, just a reminder that the Rs {{deposit_amount}} {{payment_method}} deposit for your appointment on {{booking_date}} at {{booking_time}} is still pending.\\nPayment details:\\n{{juice_payment_details}}\\nPlease send your payment screenshot after payment so the booking can be verified.\",\n    booking_confirmation_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}, your Rs {{deposit_amount}} deposit has been manually verified and your booking is now confirmed for {{booking_date}} at {{booking_time}}.\\nLocation:\\n{{studio_location}}\\nBooking/deposit policy:\\n{{deposit_policy}}\\nSee you soon!\"\n  }\n};\n\nreturn $input.all().map(item => ({ json: { ...item.json, config } }));"
+        "jsCode": "// SOURCE OF TRUTH: config/mehua-config.json — keep this object in sync with that file.\nconst config = {\n  client_id: \"mehua_lashes\",\n  business_name: \"Mehua Lashes\",\n  currency: \"MUR\",\n  deposit: {\n    required: true,\n    amount: 500,\n    method: \"Juice\",\n    payment_details: \"5902 8505 (MCB Juice)\"\n  },\n  studio_location: \"Sadally, Vacoas\",\n  deposit_policy: \"The deposit of Rs 500 is to book your spot and is non-refundable.\",\n  cancellation_policy: \"Cancellations can be done before 48h of the session.\",\n  owner_notification_email: \"wmysolutions@gmail.com\",\n  reminder_escalation_hours: 48,\n  reminder_resend_cooldown_hours: 20,\n  templates: {\n    deposit_request_template: \"Hi {{customer_name}}! Your appointment for {{service}} on {{booking_date}} at {{booking_time}} has been received.\\nA deposit of Rs {{deposit_amount}} via {{payment_method}} is required to secure your booking.\\n{{payment_method}} payment details: {{juice_payment_details}}\\nOnce you've made the payment, please send your payment screenshot here.\\nYour booking will only be confirmed after the payment has been manually verified.\",\n    deposit_reminder_template: \"Hi {{customer_name}}, just a reminder that the Rs {{deposit_amount}} {{payment_method}} deposit for your appointment on {{booking_date}} at {{booking_time}} is still pending.\\nPayment details:\\n{{juice_payment_details}}\\nPlease send your payment screenshot after payment so the booking can be verified.\",\n    booking_confirmation_template: \"Hi {{customer_name}}, your Rs {{deposit_amount}} deposit has been manually verified and your booking is now confirmed for {{booking_date}} at {{booking_time}}.\\nLocation:\\n{{studio_location}}\\nBooking/deposit policy:\\n{{deposit_policy}}\\nSee you soon!\"\n  }\n};\n\nreturn $input.all().map(item => ({ json: { ...item.json, config } }));"
       },
       "id": "config-email-01",
       "name": "Load Mehua Config (Email Path)",
@@ -69,7 +69,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// SOURCE OF TRUTH: config/mehua-config.json — keep this object in sync with that file.\nconst config = {\n  client_id: \"mehua_lashes\",\n  business_name: \"Mehua Lashes\",\n  currency: \"MUR\",\n  deposit: {\n    required: true,\n    amount: 500,\n    method: \"Juice\",\n    payment_details: \"5902 8505 (MCB Juice)\"\n  },\n  studio_location: \"TO_VALIDATE_STUDIO_LOCATION\",\n  deposit_policy: \"TO_VALIDATE_DEPOSIT_POLICY\",\n  cancellation_policy: \"TO_VALIDATE_CANCELLATION_POLICY\",\n  owner_notification_email: \"TO_VALIDATE_OWNER_EMAIL\",\n  reminder_escalation_hours: 48,\n  reminder_resend_cooldown_hours: 20,\n  templates: {\n    deposit_request_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}! Your appointment for {{service}} on {{booking_date}} at {{booking_time}} has been received.\\nA deposit of Rs {{deposit_amount}} via {{payment_method}} is required to secure your booking.\\n{{payment_method}} payment details: {{juice_payment_details}}\\nOnce you've made the payment, please send your payment screenshot here.\\nYour booking will only be confirmed after the payment has been manually verified.\",\n    deposit_reminder_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}, just a reminder that the Rs {{deposit_amount}} {{payment_method}} deposit for your appointment on {{booking_date}} at {{booking_time}} is still pending.\\nPayment details:\\n{{juice_payment_details}}\\nPlease send your payment screenshot after payment so the booking can be verified.\",\n    booking_confirmation_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}, your Rs {{deposit_amount}} deposit has been manually verified and your booking is now confirmed for {{booking_date}} at {{booking_time}}.\\nLocation:\\n{{studio_location}}\\nBooking/deposit policy:\\n{{deposit_policy}}\\nSee you soon!\"\n  }\n};\n\nreturn $input.all().map(item => ({ json: { ...item.json, config } }));"
+        "jsCode": "// SOURCE OF TRUTH: config/mehua-config.json — keep this object in sync with that file.\nconst config = {\n  client_id: \"mehua_lashes\",\n  business_name: \"Mehua Lashes\",\n  currency: \"MUR\",\n  deposit: {\n    required: true,\n    amount: 500,\n    method: \"Juice\",\n    payment_details: \"5902 8505 (MCB Juice)\"\n  },\n  studio_location: \"Sadally, Vacoas\",\n  deposit_policy: \"The deposit of Rs 500 is to book your spot and is non-refundable.\",\n  cancellation_policy: \"Cancellations can be done before 48h of the session.\",\n  owner_notification_email: \"wmysolutions@gmail.com\",\n  reminder_escalation_hours: 48,\n  reminder_resend_cooldown_hours: 20,\n  templates: {\n    deposit_request_template: \"Hi {{customer_name}}! Your appointment for {{service}} on {{booking_date}} at {{booking_time}} has been received.\\nA deposit of Rs {{deposit_amount}} via {{payment_method}} is required to secure your booking.\\n{{payment_method}} payment details: {{juice_payment_details}}\\nOnce you've made the payment, please send your payment screenshot here.\\nYour booking will only be confirmed after the payment has been manually verified.\",\n    deposit_reminder_template: \"Hi {{customer_name}}, just a reminder that the Rs {{deposit_amount}} {{payment_method}} deposit for your appointment on {{booking_date}} at {{booking_time}} is still pending.\\nPayment details:\\n{{juice_payment_details}}\\nPlease send your payment screenshot after payment so the booking can be verified.\",\n    booking_confirmation_template: \"Hi {{customer_name}}, your Rs {{deposit_amount}} deposit has been manually verified and your booking is now confirmed for {{booking_date}} at {{booking_time}}.\\nLocation:\\n{{studio_location}}\\nBooking/deposit policy:\\n{{deposit_policy}}\\nSee you soon!\"\n  }\n};\n\nreturn $input.all().map(item => ({ json: { ...item.json, config } }));"
       },
       "id": "config-test-01",
       "name": "Load Mehua Config (Test Path)",
@@ -158,7 +158,288 @@
             "Source": "={{$json.source}}"
           },
           "matchingColumns": [],
-          "schema": []
+          "schema": [
+            {
+              "id": "Booking Reference",
+              "displayName": "Booking Reference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client ID",
+              "displayName": "Client ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Idempotency Key",
+              "displayName": "Idempotency Key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Fresha Booking Ref",
+              "displayName": "Fresha Booking Ref",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Customer Contact",
+              "displayName": "Customer Contact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Contact Match Strength",
+              "displayName": "Contact Match Strength",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Service",
+              "displayName": "Service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Staff Name",
+              "displayName": "Staff Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Appointment Date",
+              "displayName": "Appointment Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Appointment Time",
+              "displayName": "Appointment Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Requires Human Review",
+              "displayName": "Requires Human Review",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Review Reason",
+              "displayName": "Review Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Deposit Amount",
+              "displayName": "Deposit Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Deposit Currency",
+              "displayName": "Deposit Currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Payment Method",
+              "displayName": "Payment Method",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Deposit Request Sent At",
+              "displayName": "Deposit Request Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Reminder Sent At",
+              "displayName": "Reminder Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Proof Received At",
+              "displayName": "Proof Received At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verified At",
+              "displayName": "Verified At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verified By",
+              "displayName": "Verified By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verification Result",
+              "displayName": "Verification Result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Confirmation Sent At",
+              "displayName": "Confirmation Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Created At",
+              "displayName": "Created At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Updated At",
+              "displayName": "Updated At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ]
         },
         "documentId": {
           "__rl": true,
@@ -193,7 +474,7 @@
         860,
         -600
       ],
-      "notes": "TEMPORARY — OWNER WORDING TO VALIDATE. Do not present as Mehua's existing wording."
+      "notes": "CONFIRMED FINAL by owner — safe to present as Mehua's real wording."
     },
     {
       "parameters": {
@@ -236,7 +517,288 @@
           "matchingColumns": [
             "Booking Reference"
           ],
-          "schema": []
+          "schema": [
+            {
+              "id": "Booking Reference",
+              "displayName": "Booking Reference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client ID",
+              "displayName": "Client ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Idempotency Key",
+              "displayName": "Idempotency Key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Fresha Booking Ref",
+              "displayName": "Fresha Booking Ref",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Customer Contact",
+              "displayName": "Customer Contact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Contact Match Strength",
+              "displayName": "Contact Match Strength",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Service",
+              "displayName": "Service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Staff Name",
+              "displayName": "Staff Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Appointment Date",
+              "displayName": "Appointment Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Appointment Time",
+              "displayName": "Appointment Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Requires Human Review",
+              "displayName": "Requires Human Review",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Review Reason",
+              "displayName": "Review Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Amount",
+              "displayName": "Deposit Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Currency",
+              "displayName": "Deposit Currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Payment Method",
+              "displayName": "Payment Method",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Request Sent At",
+              "displayName": "Deposit Request Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Reminder Sent At",
+              "displayName": "Reminder Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Proof Received At",
+              "displayName": "Proof Received At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verified At",
+              "displayName": "Verified At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verified By",
+              "displayName": "Verified By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verification Result",
+              "displayName": "Verification Result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Confirmation Sent At",
+              "displayName": "Confirmation Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Created At",
+              "displayName": "Created At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Updated At",
+              "displayName": "Updated At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ]
         }
       },
       "id": "update-deposit-sent-01",
@@ -277,7 +839,288 @@
             "Source": "={{$json.source}}"
           },
           "matchingColumns": [],
-          "schema": []
+          "schema": [
+            {
+              "id": "Booking Reference",
+              "displayName": "Booking Reference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client ID",
+              "displayName": "Client ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Idempotency Key",
+              "displayName": "Idempotency Key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Fresha Booking Ref",
+              "displayName": "Fresha Booking Ref",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Customer Contact",
+              "displayName": "Customer Contact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Contact Match Strength",
+              "displayName": "Contact Match Strength",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Service",
+              "displayName": "Service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Staff Name",
+              "displayName": "Staff Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Appointment Date",
+              "displayName": "Appointment Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Appointment Time",
+              "displayName": "Appointment Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Requires Human Review",
+              "displayName": "Requires Human Review",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Review Reason",
+              "displayName": "Review Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Deposit Amount",
+              "displayName": "Deposit Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Currency",
+              "displayName": "Deposit Currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Payment Method",
+              "displayName": "Payment Method",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Request Sent At",
+              "displayName": "Deposit Request Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Reminder Sent At",
+              "displayName": "Reminder Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Proof Received At",
+              "displayName": "Proof Received At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verified At",
+              "displayName": "Verified At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verified By",
+              "displayName": "Verified By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verification Result",
+              "displayName": "Verification Result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Confirmation Sent At",
+              "displayName": "Confirmation Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Created At",
+              "displayName": "Created At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Updated At",
+              "displayName": "Updated At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ]
         },
         "documentId": {
           "__rl": true,
@@ -339,7 +1182,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// SOURCE OF TRUTH: config/mehua-config.json — keep this object in sync with that file.\nconst config = {\n  client_id: \"mehua_lashes\",\n  business_name: \"Mehua Lashes\",\n  currency: \"MUR\",\n  deposit: {\n    required: true,\n    amount: 500,\n    method: \"Juice\",\n    payment_details: \"5902 8505 (MCB Juice)\"\n  },\n  studio_location: \"TO_VALIDATE_STUDIO_LOCATION\",\n  deposit_policy: \"TO_VALIDATE_DEPOSIT_POLICY\",\n  cancellation_policy: \"TO_VALIDATE_CANCELLATION_POLICY\",\n  owner_notification_email: \"TO_VALIDATE_OWNER_EMAIL\",\n  reminder_escalation_hours: 48,\n  reminder_resend_cooldown_hours: 20,\n  templates: {\n    deposit_request_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}! Your appointment for {{service}} on {{booking_date}} at {{booking_time}} has been received.\\nA deposit of Rs {{deposit_amount}} via {{payment_method}} is required to secure your booking.\\n{{payment_method}} payment details: {{juice_payment_details}}\\nOnce you've made the payment, please send your payment screenshot here.\\nYour booking will only be confirmed after the payment has been manually verified.\",\n    deposit_reminder_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}, just a reminder that the Rs {{deposit_amount}} {{payment_method}} deposit for your appointment on {{booking_date}} at {{booking_time}} is still pending.\\nPayment details:\\n{{juice_payment_details}}\\nPlease send your payment screenshot after payment so the booking can be verified.\",\n    booking_confirmation_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}, your Rs {{deposit_amount}} deposit has been manually verified and your booking is now confirmed for {{booking_date}} at {{booking_time}}.\\nLocation:\\n{{studio_location}}\\nBooking/deposit policy:\\n{{deposit_policy}}\\nSee you soon!\"\n  }\n};\n\nreturn $input.all().map(item => ({ json: { ...item.json, config } }));"
+        "jsCode": "// SOURCE OF TRUTH: config/mehua-config.json — keep this object in sync with that file.\nconst config = {\n  client_id: \"mehua_lashes\",\n  business_name: \"Mehua Lashes\",\n  currency: \"MUR\",\n  deposit: {\n    required: true,\n    amount: 500,\n    method: \"Juice\",\n    payment_details: \"5902 8505 (MCB Juice)\"\n  },\n  studio_location: \"Sadally, Vacoas\",\n  deposit_policy: \"The deposit of Rs 500 is to book your spot and is non-refundable.\",\n  cancellation_policy: \"Cancellations can be done before 48h of the session.\",\n  owner_notification_email: \"wmysolutions@gmail.com\",\n  reminder_escalation_hours: 48,\n  reminder_resend_cooldown_hours: 20,\n  templates: {\n    deposit_request_template: \"Hi {{customer_name}}! Your appointment for {{service}} on {{booking_date}} at {{booking_time}} has been received.\\nA deposit of Rs {{deposit_amount}} via {{payment_method}} is required to secure your booking.\\n{{payment_method}} payment details: {{juice_payment_details}}\\nOnce you've made the payment, please send your payment screenshot here.\\nYour booking will only be confirmed after the payment has been manually verified.\",\n    deposit_reminder_template: \"Hi {{customer_name}}, just a reminder that the Rs {{deposit_amount}} {{payment_method}} deposit for your appointment on {{booking_date}} at {{booking_time}} is still pending.\\nPayment details:\\n{{juice_payment_details}}\\nPlease send your payment screenshot after payment so the booking can be verified.\",\n    booking_confirmation_template: \"Hi {{customer_name}}, your Rs {{deposit_amount}} deposit has been manually verified and your booking is now confirmed for {{booking_date}} at {{booking_time}}.\\nLocation:\\n{{studio_location}}\\nBooking/deposit policy:\\n{{deposit_policy}}\\nSee you soon!\"\n  }\n};\n\nreturn $input.all().map(item => ({ json: { ...item.json, config } }));"
       },
       "id": "config-overdue-01",
       "name": "Load Mehua Config (Overdue Path)",
@@ -400,7 +1243,7 @@
         340,
         -40
       ],
-      "notes": "TEMPORARY — OWNER WORDING TO VALIDATE. Do not send automatically to a real customer during Phase 1 — this drafts a message for the owner, it does not send WhatsApp."
+      "notes": "Do not send automatically to a real customer during Phase 1 — this drafts a message for the owner, it does not send WhatsApp."
     },
     {
       "parameters": {
@@ -443,7 +1286,288 @@
           "matchingColumns": [
             "Booking Reference"
           ],
-          "schema": []
+          "schema": [
+            {
+              "id": "Booking Reference",
+              "displayName": "Booking Reference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client ID",
+              "displayName": "Client ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Idempotency Key",
+              "displayName": "Idempotency Key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Fresha Booking Ref",
+              "displayName": "Fresha Booking Ref",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Customer Contact",
+              "displayName": "Customer Contact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Contact Match Strength",
+              "displayName": "Contact Match Strength",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Service",
+              "displayName": "Service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Staff Name",
+              "displayName": "Staff Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Appointment Date",
+              "displayName": "Appointment Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Appointment Time",
+              "displayName": "Appointment Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Requires Human Review",
+              "displayName": "Requires Human Review",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Review Reason",
+              "displayName": "Review Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Amount",
+              "displayName": "Deposit Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Currency",
+              "displayName": "Deposit Currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Payment Method",
+              "displayName": "Payment Method",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Request Sent At",
+              "displayName": "Deposit Request Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Reminder Sent At",
+              "displayName": "Reminder Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Proof Received At",
+              "displayName": "Proof Received At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verified At",
+              "displayName": "Verified At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verified By",
+              "displayName": "Verified By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verification Result",
+              "displayName": "Verification Result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Confirmation Sent At",
+              "displayName": "Confirmation Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Created At",
+              "displayName": "Created At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Updated At",
+              "displayName": "Updated At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ]
         }
       },
       "id": "update-status-overdue-01",
@@ -506,7 +1630,288 @@
           "matchingColumns": [
             "Booking Reference"
           ],
-          "schema": []
+          "schema": [
+            {
+              "id": "Booking Reference",
+              "displayName": "Booking Reference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client ID",
+              "displayName": "Client ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Idempotency Key",
+              "displayName": "Idempotency Key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Fresha Booking Ref",
+              "displayName": "Fresha Booking Ref",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Customer Contact",
+              "displayName": "Customer Contact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Contact Match Strength",
+              "displayName": "Contact Match Strength",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Service",
+              "displayName": "Service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Staff Name",
+              "displayName": "Staff Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Appointment Date",
+              "displayName": "Appointment Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Appointment Time",
+              "displayName": "Appointment Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Requires Human Review",
+              "displayName": "Requires Human Review",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Review Reason",
+              "displayName": "Review Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Amount",
+              "displayName": "Deposit Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Currency",
+              "displayName": "Deposit Currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Payment Method",
+              "displayName": "Payment Method",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Request Sent At",
+              "displayName": "Deposit Request Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Reminder Sent At",
+              "displayName": "Reminder Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Proof Received At",
+              "displayName": "Proof Received At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Verified At",
+              "displayName": "Verified At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verified By",
+              "displayName": "Verified By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verification Result",
+              "displayName": "Verification Result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Confirmation Sent At",
+              "displayName": "Confirmation Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Created At",
+              "displayName": "Created At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Updated At",
+              "displayName": "Updated At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ]
         }
       },
       "id": "update-awaiting-verification-01",
@@ -566,7 +1971,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// SOURCE OF TRUTH: config/mehua-config.json — keep this object in sync with that file.\nconst config = {\n  client_id: \"mehua_lashes\",\n  business_name: \"Mehua Lashes\",\n  currency: \"MUR\",\n  deposit: {\n    required: true,\n    amount: 500,\n    method: \"Juice\",\n    payment_details: \"5902 8505 (MCB Juice)\"\n  },\n  studio_location: \"TO_VALIDATE_STUDIO_LOCATION\",\n  deposit_policy: \"TO_VALIDATE_DEPOSIT_POLICY\",\n  cancellation_policy: \"TO_VALIDATE_CANCELLATION_POLICY\",\n  owner_notification_email: \"TO_VALIDATE_OWNER_EMAIL\",\n  reminder_escalation_hours: 48,\n  reminder_resend_cooldown_hours: 20,\n  templates: {\n    deposit_request_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}! Your appointment for {{service}} on {{booking_date}} at {{booking_time}} has been received.\\nA deposit of Rs {{deposit_amount}} via {{payment_method}} is required to secure your booking.\\n{{payment_method}} payment details: {{juice_payment_details}}\\nOnce you've made the payment, please send your payment screenshot here.\\nYour booking will only be confirmed after the payment has been manually verified.\",\n    deposit_reminder_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}, just a reminder that the Rs {{deposit_amount}} {{payment_method}} deposit for your appointment on {{booking_date}} at {{booking_time}} is still pending.\\nPayment details:\\n{{juice_payment_details}}\\nPlease send your payment screenshot after payment so the booking can be verified.\",\n    booking_confirmation_template: \"TEMPORARY — OWNER WORDING TO VALIDATE\\n\\nHi {{customer_name}}, your Rs {{deposit_amount}} deposit has been manually verified and your booking is now confirmed for {{booking_date}} at {{booking_time}}.\\nLocation:\\n{{studio_location}}\\nBooking/deposit policy:\\n{{deposit_policy}}\\nSee you soon!\"\n  }\n};\n\nreturn $input.all().map(item => ({ json: { ...item.json, config } }));"
+        "jsCode": "// SOURCE OF TRUTH: config/mehua-config.json — keep this object in sync with that file.\nconst config = {\n  client_id: \"mehua_lashes\",\n  business_name: \"Mehua Lashes\",\n  currency: \"MUR\",\n  deposit: {\n    required: true,\n    amount: 500,\n    method: \"Juice\",\n    payment_details: \"5902 8505 (MCB Juice)\"\n  },\n  studio_location: \"Sadally, Vacoas\",\n  deposit_policy: \"The deposit of Rs 500 is to book your spot and is non-refundable.\",\n  cancellation_policy: \"Cancellations can be done before 48h of the session.\",\n  owner_notification_email: \"wmysolutions@gmail.com\",\n  reminder_escalation_hours: 48,\n  reminder_resend_cooldown_hours: 20,\n  templates: {\n    deposit_request_template: \"Hi {{customer_name}}! Your appointment for {{service}} on {{booking_date}} at {{booking_time}} has been received.\\nA deposit of Rs {{deposit_amount}} via {{payment_method}} is required to secure your booking.\\n{{payment_method}} payment details: {{juice_payment_details}}\\nOnce you've made the payment, please send your payment screenshot here.\\nYour booking will only be confirmed after the payment has been manually verified.\",\n    deposit_reminder_template: \"Hi {{customer_name}}, just a reminder that the Rs {{deposit_amount}} {{payment_method}} deposit for your appointment on {{booking_date}} at {{booking_time}} is still pending.\\nPayment details:\\n{{juice_payment_details}}\\nPlease send your payment screenshot after payment so the booking can be verified.\",\n    booking_confirmation_template: \"Hi {{customer_name}}, your Rs {{deposit_amount}} deposit has been manually verified and your booking is now confirmed for {{booking_date}} at {{booking_time}}.\\nLocation:\\n{{studio_location}}\\nBooking/deposit policy:\\n{{deposit_policy}}\\nSee you soon!\"\n  }\n};\n\nreturn $input.all().map(item => ({ json: { ...item.json, config } }));"
       },
       "id": "config-verify-01",
       "name": "Load Mehua Config (Verify Path)",
@@ -625,7 +2030,288 @@
           "matchingColumns": [
             "Booking Reference"
           ],
-          "schema": []
+          "schema": [
+            {
+              "id": "Booking Reference",
+              "displayName": "Booking Reference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client ID",
+              "displayName": "Client ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Idempotency Key",
+              "displayName": "Idempotency Key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Fresha Booking Ref",
+              "displayName": "Fresha Booking Ref",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Customer Contact",
+              "displayName": "Customer Contact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Contact Match Strength",
+              "displayName": "Contact Match Strength",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Service",
+              "displayName": "Service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Staff Name",
+              "displayName": "Staff Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Appointment Date",
+              "displayName": "Appointment Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Appointment Time",
+              "displayName": "Appointment Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Requires Human Review",
+              "displayName": "Requires Human Review",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Review Reason",
+              "displayName": "Review Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Amount",
+              "displayName": "Deposit Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Currency",
+              "displayName": "Deposit Currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Payment Method",
+              "displayName": "Payment Method",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Request Sent At",
+              "displayName": "Deposit Request Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Reminder Sent At",
+              "displayName": "Reminder Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Proof Received At",
+              "displayName": "Proof Received At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verified At",
+              "displayName": "Verified At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Verified By",
+              "displayName": "Verified By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Verification Result",
+              "displayName": "Verification Result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Confirmation Sent At",
+              "displayName": "Confirmation Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Created At",
+              "displayName": "Created At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Updated At",
+              "displayName": "Updated At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ]
         }
       },
       "id": "update-verified-01",
@@ -685,7 +2371,7 @@
         600,
         440
       ],
-      "notes": "TEMPORARY — OWNER WORDING TO VALIDATE. studio_location and deposit_policy are still TO_VALIDATE placeholders."
+      "notes": "CONFIRMED FINAL by owner — studio_location and deposit_policy are real values now."
     },
     {
       "parameters": {
@@ -730,7 +2416,288 @@
           "matchingColumns": [
             "Booking Reference"
           ],
-          "schema": []
+          "schema": [
+            {
+              "id": "Booking Reference",
+              "displayName": "Booking Reference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client ID",
+              "displayName": "Client ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Idempotency Key",
+              "displayName": "Idempotency Key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Fresha Booking Ref",
+              "displayName": "Fresha Booking Ref",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Customer Contact",
+              "displayName": "Customer Contact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Contact Match Strength",
+              "displayName": "Contact Match Strength",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Service",
+              "displayName": "Service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Staff Name",
+              "displayName": "Staff Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Appointment Date",
+              "displayName": "Appointment Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Appointment Time",
+              "displayName": "Appointment Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Requires Human Review",
+              "displayName": "Requires Human Review",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Review Reason",
+              "displayName": "Review Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Amount",
+              "displayName": "Deposit Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Currency",
+              "displayName": "Deposit Currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Payment Method",
+              "displayName": "Payment Method",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Request Sent At",
+              "displayName": "Deposit Request Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Reminder Sent At",
+              "displayName": "Reminder Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Proof Received At",
+              "displayName": "Proof Received At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verified At",
+              "displayName": "Verified At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Verified By",
+              "displayName": "Verified By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Verification Result",
+              "displayName": "Verification Result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Confirmation Sent At",
+              "displayName": "Confirmation Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Created At",
+              "displayName": "Created At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Updated At",
+              "displayName": "Updated At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ]
         }
       },
       "id": "update-rejected-01",
@@ -782,7 +2749,8 @@
           "value": "Booking Log"
         }
       },
-      "notes": "Reads the whole Booking Log before creating a new row, so 'Check Duplicate Booking' can compare the just-parsed booking's Idempotency Key against every existing row. Same read-then-compare pattern as 'Read Booking Log' (overdue check) - simple and correct at prototype volume; revisit if the sheet grows large."
+      "alwaysOutputData": true,
+      "notes": "Reads the whole Booking Log before creating a new row, so 'Check Duplicate Booking' can compare the just-parsed booking's Idempotency Key against every existing row. Same read-then-compare pattern as 'Read Booking Log' (overdue check) - simple and correct at prototype volume; revisit if the sheet grows large.\n\nalwaysOutputData is REQUIRED, not cosmetic. n8n halts a branch when a node emits zero items, and a Booking Log holding only its header row reads as zero items - so without this the very first booking into a fresh sheet was silently dropped: the execution reported success, stopped at this node, and never logged the row. Found 27 Aug 2026 by the first live Google Sheets run against an empty throwaway sheet; the offline lifecycle mock could not catch it because it does not model n8n's zero-item halt. 'Check Duplicate Booking' already treats the resulting single empty item correctly (no Idempotency Key, so no match, so not a duplicate)."
     },
     {
       "id": "check-dup-booking-01",
@@ -890,7 +2858,288 @@
           "matchingColumns": [
             "Booking Reference"
           ],
-          "schema": []
+          "schema": [
+            {
+              "id": "Booking Reference",
+              "displayName": "Booking Reference",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Client ID",
+              "displayName": "Client ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Idempotency Key",
+              "displayName": "Idempotency Key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Fresha Booking Ref",
+              "displayName": "Fresha Booking Ref",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Client Name",
+              "displayName": "Client Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Customer Contact",
+              "displayName": "Customer Contact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Contact Match Strength",
+              "displayName": "Contact Match Strength",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Service",
+              "displayName": "Service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Staff Name",
+              "displayName": "Staff Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Appointment Date",
+              "displayName": "Appointment Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Appointment Time",
+              "displayName": "Appointment Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Requires Human Review",
+              "displayName": "Requires Human Review",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Review Reason",
+              "displayName": "Review Reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Amount",
+              "displayName": "Deposit Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Currency",
+              "displayName": "Deposit Currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Payment Method",
+              "displayName": "Payment Method",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Deposit Request Sent At",
+              "displayName": "Deposit Request Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Reminder Sent At",
+              "displayName": "Reminder Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Proof Received At",
+              "displayName": "Proof Received At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verified At",
+              "displayName": "Verified At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verified By",
+              "displayName": "Verified By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Verification Result",
+              "displayName": "Verification Result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Confirmation Sent At",
+              "displayName": "Confirmation Sent At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Created At",
+              "displayName": "Created At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Updated At",
+              "displayName": "Updated At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ]
         },
         "options": {}
       },
@@ -1277,7 +3526,8 @@
   },
   "active": false,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "timezone": "Indian/Mauritius"
   },
   "pinData": {},
   "meta": {

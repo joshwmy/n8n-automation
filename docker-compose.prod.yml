@@ -1,0 +1,24 @@
+# Production overlay — attaches n8n to the shared reverse-proxy network so
+# an existing Caddy instance on the host (Academious's, or any other) can
+# reverse-proxy to it by service name, with no new host ports opened and no
+# changes to the base docker-compose.yml's loopback-only port binding.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Requires EDGE_NETWORK_NAME in .env to name an already-existing external
+# Docker network that the reverse proxy container is also attached to.
+# WEBHOOK_URL must be set so n8n's two owner-facing form triggers generate
+# reachable public URLs — see .env.example.
+
+services:
+  n8n:
+    environment:
+      - WEBHOOK_URL=${WEBHOOK_URL:?Set WEBHOOK_URL in .env — see .env.example}
+    networks:
+      - default
+      - edge
+
+networks:
+  edge:
+    external: true
+    name: ${EDGE_NETWORK_NAME:?Set EDGE_NETWORK_NAME in .env — the existing reverse-proxy network to join}

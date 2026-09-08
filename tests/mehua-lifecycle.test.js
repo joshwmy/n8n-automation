@@ -58,7 +58,10 @@ assert(
   run.drafts.deposit.includes("5902 8505 (MCB Juice)"),
   "deposit draft carries the real owner-provided Juice number, not an invented one"
 );
-assert(run.drafts.deposit.includes("TEMPORARY"), "deposit draft is marked TEMPORARY wording");
+assert(
+  !run.drafts.deposit.includes("TEMPORARY"),
+  "deposit draft uses the owner-confirmed final wording, not the temporary placeholder"
+);
 assert(
   run.drafts.deposit.includes("Fake Customer One"),
   "deposit draft is addressed to the parsed customer"
@@ -84,12 +87,14 @@ assert(run.finalRow["Verification Result"] === "Verified", "verification result 
 assert(Boolean(run.finalRow["Verified At"]), "Verified At timestamp is recorded");
 assert(Boolean(run.finalRow["Confirmation Sent At"]), "Confirmation Sent At is recorded");
 assert(
-  run.drafts.confirmation.includes("TO_VALIDATE_STUDIO_LOCATION"),
-  "confirmation shows the unresolved studio location placeholder rather than inventing one"
+  run.drafts.confirmation.includes("Sadally, Vacoas"),
+  "confirmation shows the owner-confirmed studio location"
 );
 assert(
-  run.drafts.confirmation.includes("TO_VALIDATE_DEPOSIT_POLICY"),
-  "confirmation shows the unresolved deposit policy placeholder rather than inventing one"
+  run.drafts.confirmation.includes(
+    "The deposit of Rs 500 is to book your spot and is non-refundable."
+  ),
+  "confirmation shows the owner-confirmed deposit policy"
 );
 
 // --------------------------------------------------------------------------

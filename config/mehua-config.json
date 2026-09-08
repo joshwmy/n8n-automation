@@ -12,14 +12,14 @@
     "_status": "CONFIRMED: amount=500 MUR, method=Juice, payment_details=5902 8505 (MCB Juice) — provided directly by Joshua. This is the existing manual Juice number already given out to customers; not a secret/PIN/OTP. Keep this file private (already git-ignored from any public sync) but it is fine to be present in this private repo."
   },
 
-  "studio_location": "TO_VALIDATE_STUDIO_LOCATION",
-  "deposit_policy": "TO_VALIDATE_DEPOSIT_POLICY",
-  "cancellation_policy": "TO_VALIDATE_CANCELLATION_POLICY",
-  "owner_notification_email": "TO_VALIDATE_OWNER_EMAIL",
+  "studio_location": "Sadally, Vacoas",
+  "deposit_policy": "The deposit of Rs 500 is to book your spot and is non-refundable.",
+  "cancellation_policy": "Cancellations can be done before 48h of the session.",
+  "owner_notification_email": "wmysolutions@gmail.com",
 
   "reminder_escalation_hours": 48,
   "reminder_resend_cooldown_hours": 20,
-  "_reminder_timing_status": "TO_VALIDATE: 48h escalation window is from the source research (Mauritius_SME_Automation_Feasibility_Study.pdf), not yet confirmed directly with the owner. 20h resend cooldown is our own assumption to avoid spamming the owner with a reminder every 4-hour check cycle — not sourced from any document.",
+  "_reminder_timing_status": "CONFIRMED by owner: 48h escalation window. 20h resend cooldown is still our own assumption (unconfirmed) to avoid spamming the owner with a reminder every 4-hour check cycle.",
 
   "payment_status_values": [
     "AWAITING_DEPOSIT",
@@ -33,13 +33,13 @@
   "_payment_status_rule": "Only an explicit owner action (the 'Owner Form - Review Deposit Verification' form, Verification Result = Verified) may move a booking into DEPOSIT_VERIFIED. No OCR, AI model, screenshot analysis or text recognition may ever set this status. Receiving a screenshot only moves a booking to AWAITING_MANUAL_VERIFICATION, never DEPOSIT_VERIFIED directly.",
 
   "templates": {
-    "_status": "TEMPORARY — OWNER WORDING TO VALIDATE. These are development placeholders, not Mehua's real customer-facing wording. Do not send any of these to a real customer. Merge fields use {{double_braces}} and are filled by the workflow's own renderTemplate() code, not by n8n's expression engine.",
+    "_status": "CONFIRMED FINAL by owner. Real customer-facing wording — safe to send. Merge fields use {{double_braces}} and are filled by the workflow's own renderTemplate() code, not by n8n's expression engine.",
 
-    "deposit_request_template": "TEMPORARY — OWNER WORDING TO VALIDATE\n\nHi {{customer_name}}! Your appointment for {{service}} on {{booking_date}} at {{booking_time}} has been received.\nA deposit of Rs {{deposit_amount}} via {{payment_method}} is required to secure your booking.\n{{payment_method}} payment details: {{juice_payment_details}}\nOnce you've made the payment, please send your payment screenshot here.\nYour booking will only be confirmed after the payment has been manually verified.",
+    "deposit_request_template": "Hi {{customer_name}}! Your appointment for {{service}} on {{booking_date}} at {{booking_time}} has been received.\nA deposit of Rs {{deposit_amount}} via {{payment_method}} is required to secure your booking.\n{{payment_method}} payment details: {{juice_payment_details}}\nOnce you've made the payment, please send your payment screenshot here.\nYour booking will only be confirmed after the payment has been manually verified.",
 
-    "deposit_reminder_template": "TEMPORARY — OWNER WORDING TO VALIDATE\n\nHi {{customer_name}}, just a reminder that the Rs {{deposit_amount}} {{payment_method}} deposit for your appointment on {{booking_date}} at {{booking_time}} is still pending.\nPayment details:\n{{juice_payment_details}}\nPlease send your payment screenshot after payment so the booking can be verified.",
+    "deposit_reminder_template": "Hi {{customer_name}}, just a reminder that the Rs {{deposit_amount}} {{payment_method}} deposit for your appointment on {{booking_date}} at {{booking_time}} is still pending.\nPayment details:\n{{juice_payment_details}}\nPlease send your payment screenshot after payment so the booking can be verified.",
 
-    "booking_confirmation_template": "TEMPORARY — OWNER WORDING TO VALIDATE\n\nHi {{customer_name}}, your Rs {{deposit_amount}} deposit has been manually verified and your booking is now confirmed for {{booking_date}} at {{booking_time}}.\nLocation:\n{{studio_location}}\nBooking/deposit policy:\n{{deposit_policy}}\nSee you soon!"
+    "booking_confirmation_template": "Hi {{customer_name}}, your Rs {{deposit_amount}} deposit has been manually verified and your booking is now confirmed for {{booking_date}} at {{booking_time}}.\nLocation:\n{{studio_location}}\nBooking/deposit policy:\n{{deposit_policy}}\nSee you soon!"
   },
 
   "test_scenario": {
