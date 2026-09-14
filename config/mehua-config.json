@@ -1,5 +1,5 @@
 {
-  "_comment": "Centralized development configuration for the Mehua Lashes deposit-concierge prototype. This is the canonical source of truth for these values — edit here first. The n8n workflow embeds a copy of this object in each 'Load Mehua Config' node (n8n has no clean cross-branch config include without an Execute Workflow sub-node, which isn't set up yet — see workflows/README.md). Keep those copies in sync with this file until that's fixed.",
+  "_comment": "Client config for the Mehua Lashes deposit-concierge deployment — the single source of truth for these values. The workflow itself carries none of them: its 'Load Mehua Config' nodes read this content at runtime via the CLIENT_CONFIG_JSON env var. After editing this file, run `node scripts/render-client-env.js config/mehua-config.json` and update .env. A second client is a copy of this file (e.g. config/other-client.json) plus its own .env, never a fork of the workflow.",
   "client_id": "mehua_lashes",
   "business_name": "Mehua Lashes",
   "currency": "MUR",

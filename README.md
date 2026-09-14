@@ -47,7 +47,7 @@ from volume `automationagency_n8n_data`.
 | Workflow imports into real n8n | Yes — `n8n import:workflow`, no errors |
 | All 39 nodes load | Yes — every node type + `typeVersion` accepted |
 | n8n migrations on the workflow | **None.** n8n re-exported all 39 nodes with parameters and `typeVersion` byte-identical, so the file in git *is* the canonical accepted form |
-| Google Sheets nodes (`typeVersion 4.5`, resource locators, column mappings) | Accepted and resolved at runtime |
+| Google Sheets nodes (`typeVersion 4.5`, resource locators, column mappings) | **Accepted at import — but this did NOT mean they ran.** Corrected 27 Aug 2026: with the API stubbed, "accepted and resolved" only ever described import and expression resolution. The first live run showed every mapping node then refused to execute (`columns.schema` empty) — see "Found by the live Google run" below |
 | Expressions (`$json[...]`, `$now.toISO()`, `$('Node').item.json[...]`) | All resolved — no red/invalid expressions |
 | TEST - Simulate New Booking path | Ran to completion |
 | Overdue reminder path | Ran to completion, escalated to `OVERDUE` |
@@ -59,6 +59,36 @@ from volume `automationagency_n8n_data`.
 Branch runs used stubs **only** for the two external services (Google Sheets
 API, Gmail send). Every Code node, IF node, connection and expression was the
 real one, unmodified.
+
+### Found by the live Google run (27 Aug 2026)
+
+Connecting a real Google Sheets credential and a throwaway spreadsheet
+immediately exposed two defects that **every** offline check had passed over.
+Both were latent production bugs; both are fixed, and
+`tests/workflow-integrity.test.js` now guards the second.
+
+**1. The first booking into an empty Booking Log was silently dropped.**
+`Read Booking Log (Duplicate Check)` returns zero items when the sheet holds
+only its header row, and n8n halts a branch whose node emits no items. The
+execution reported `success`, stopped at that node, wrote no row and sent no
+notification — with no error anywhere. Since a real Booking Log also starts
+empty, this would have hit production on the first booking. Fixed with
+`alwaysOutputData: true` on that node, which emits one empty item so the
+duplicate check still runs (it already handled an empty item correctly).
+
+**2. No Google Sheets write in the workflow had ever been able to run.**
+All eight mapping nodes carried `"columns.schema": []`. n8n 2.34.4 accepts that
+at import and rejects it at execution:
+`` `columns.schema` is required when `columns.mappingMode` is `defineBelow` ``.
+That affected every write in the workflow — booking logging, all four status
+updates and all six lifecycle timestamps. The schema is now populated for all
+28 columns on every mapping node, generated from
+`config/booking-log-headers.csv`.
+
+The lesson for reading the table above: **import success is not runtime
+success**, and a stubbed external service hides the entire class of bug that
+only the real API surfaces. "All 39 nodes load" and "n8n re-exported them
+byte-identical" remain true, and neither implied the nodes could execute.
 
 **Still not verified — needs live Google credentials:**
 
@@ -222,19 +252,22 @@ Do not commit that substitution — the placeholder is what belongs in git.
 Alternatively, import as-is and set the Document field on each Sheets node
 from the "From list" picker in the n8n UI.
 
-### Business values still to be filled in
+### Business config
 
-These are deliberate placeholders, not oversights. They live in
-`config/mehua-config.json`, and the same object is embedded in the four
-`Load Mehua Config` nodes (keep them in sync — `npm test` checks this):
+All business values (studio location, deposit/cancellation policy, message
+templates, reminder timing, owner notification email) are confirmed and live
+in `config/mehua-config.json` — the single source of truth. The workflow
+itself carries none of these values: its four `Load Mehua Config` nodes read
+them from the `CLIENT_CONFIG_JSON` environment variable at runtime, so the
+workflow file never changes between clients. After editing
+`config/mehua-config.json`, regenerate that variable and update `.env`:
 
-- `studio_location`
-- `deposit_policy`
-- `cancellation_policy`
-- `owner_notification_email`
-- the three message templates (currently marked `TEMPORARY — OWNER WORDING TO VALIDATE`)
-- `reminder_escalation_hours` (48) and `reminder_resend_cooldown_hours` (20) —
-  both configurable, neither confirmed with the owner yet
+```bash
+node scripts/render-client-env.js config/mehua-config.json
+```
+
+`tests/workflow-integrity.test.js` guards against ever re-hardcoding a
+client's values back into the workflow.
 
 Rs 500 / Juice / the Juice number are confirmed and already filled in.
 
@@ -283,7 +316,7 @@ That runs four suites:
 | Suite | What it proves |
 |---|---|
 | `scripts/validate-compose.js` | compose file is valid, every `${VAR}` is documented, `.env` is gitignored and untracked, the persistence/restart/local-bind guarantees hold |
-| `tests/workflow-integrity.test.js` | every connection resolves, no orphan nodes, Code nodes parse, Sheets nodes use the current node schema and actually map columns, all 28 sheet columns have a writer, cross-node `$('…')` references exist, the four embedded config copies match `config/mehua-config.json`, no secrets in the workflow |
+| `tests/workflow-integrity.test.js` | every connection resolves, no orphan nodes, Code nodes parse, Sheets nodes use the current node schema and actually map columns, all 28 sheet columns have a writer, cross-node `$('…')` references exist, the config-loader nodes stay generic and never hardcode a client's values, no secrets in the workflow |
 | `tests/fresha-parser.test.js` | the parser against the three real (sanitized) Fresha fixtures plus malformed/unknown/missing-field cases |
 | `tests/mehua-lifecycle.test.js` | the full deposit lifecycle, idempotency, reminder cooldown, rejection path — driven through the workflow's own nodes |
 

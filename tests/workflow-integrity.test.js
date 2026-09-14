@@ -24,6 +24,23 @@ workflow.nodes.forEach((n) => {
 console.log("=== Workflow integrity ===\n");
 
 // --------------------------------------------------------------------------
+console.log("[settings] the workflow pins its own timezone");
+
+// Every lifecycle timestamp is written by {{ $now.toISO() }}, so the workflow's
+// timezone decides what lands in six Booking Log columns. Until 27 Aug 2026
+// settings carried no timezone at all and the value came from the instance's
+// GENERIC_TIMEZONE — which meant the first real Sheets write produced UTC
+// ("2026-08-27T14:28:20.818Z") instead of the required +04:00, and a deploy to
+// any host without that env var would silently shift every timestamp by four
+// hours with nothing failing. Pin it in the workflow so it travels with the file.
+assert(
+  workflow.settings && workflow.settings.timezone === "Indian/Mauritius",
+  "workflow.settings.timezone is Indian/Mauritius (got: " +
+    JSON.stringify(workflow.settings && workflow.settings.timezone) +
+    ")"
+);
+
+// --------------------------------------------------------------------------
 console.log("[graph] nodes and connections");
 
 assert(workflow.nodes.length > 0, "workflow has nodes");
@@ -196,6 +213,47 @@ sheetsNodes
           ") is itself mapped, or there is nothing to match on"
       );
     }
+
+    // n8n 2.34.4 accepts an empty columns.schema at IMPORT and then refuses to
+    // run the node: "`columns.schema` is required when `columns.mappingMode` is
+    // `defineBelow`". Every Sheets node shipped with "schema": [] until the
+    // first live run on 27 Aug 2026 hit exactly that. Import success is
+    // therefore not evidence the node works — assert the schema is populated.
+    const schema = cols.schema || [];
+    assert(
+      schema.length > 0,
+      n.name + ": columns.schema is populated (n8n refuses to run defineBelow without it)"
+    );
+    assert(
+      schema.length === SHEET_COLUMNS.length,
+      n.name +
+        ": columns.schema describes all " +
+        SHEET_COLUMNS.length +
+        " Booking Log columns (found " +
+        schema.length +
+        ")"
+    );
+
+    const schemaIds = schema.map((s) => s.id);
+    const missingFromSchema = SHEET_COLUMNS.filter((c) => !schemaIds.includes(c));
+    assert(
+      missingFromSchema.length === 0,
+      n.name +
+        ": columns.schema covers every header" +
+        (missingFromSchema.length ? " (missing: " + missingFromSchema.join(", ") + ")" : "")
+    );
+
+    // A mapped column marked removed:true is dropped by n8n at run time, which
+    // would silently stop writing that column.
+    const mappedButRemoved = schema
+      .filter((s) => s.removed === true && mapped.includes(s.id))
+      .map((s) => s.id);
+    assert(
+      mappedButRemoved.length === 0,
+      n.name +
+        ": no mapped column is marked removed in the schema" +
+        (mappedButRemoved.length ? " (" + mappedButRemoved.join(", ") + ")" : "")
+    );
   });
 
 // --------------------------------------------------------------------------
@@ -276,7 +334,7 @@ sheetsNodes.forEach((n) => {
 
 // --------------------------------------------------------------------------
 console.log(
-  "\n[config] the four embedded config copies match config/mehua-config.json"
+  "\n[config] the four Load Mehua Config nodes load CLIENT_CONFIG_JSON, not hardcoded values"
 );
 
 const configNodeNames = workflow.nodes
@@ -284,6 +342,28 @@ const configNodeNames = workflow.nodes
   .map((n) => n.name);
 
 assert(configNodeNames.length === 4, "all four Load Mehua Config nodes are present");
+
+// Regression guard: these nodes must stay generic loaders so a second client
+// is a new config file, not a fork of this workflow. If someone re-inlines a
+// business value here, catch it before it ships.
+const configNodeCode = workflow.nodes
+  .filter((n) => configNodeNames.includes(n.name))
+  .map((n) => ({ name: n.name, code: n.parameters.jsCode }));
+
+const firstCode = configNodeCode[0].code;
+configNodeCode.slice(1).forEach((n) => {
+  assert(n.code === firstCode, n.name + " has the same loader code as " + configNodeCode[0].name);
+});
+assert(
+  firstCode.includes("$env.CLIENT_CONFIG_JSON"),
+  "the loader reads $env.CLIENT_CONFIG_JSON rather than embedding values"
+);
+["mehua_lashes", "Sadally", "Vacoas", configFile.owner_notification_email].forEach((literal) => {
+  assert(
+    !firstCode.includes(literal),
+    "loader code does not hardcode client-specific value " + JSON.stringify(literal)
+  );
+});
 
 const configs = configNodeNames.map((name) => ({
   name,
@@ -298,7 +378,7 @@ configs.slice(1).forEach((c) => {
   );
 });
 
-// The embedded copy is a subset of the JSON file (it drops the _comment /
+// The loaded config is a subset of the JSON file (it drops the _comment /
 // _status documentation keys), so compare only the keys it actually carries.
 function compareAgainstFile(embedded, fromFile, trail) {
   Object.keys(embedded).forEach((key) => {

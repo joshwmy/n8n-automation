@@ -34,15 +34,19 @@ of past sessions.
   re-authorizing every credential permanently breaks all stored OAuth
   credentials. Never regenerate it casually.
 
-## Config sync (enforced by tests, easy to break by hand)
+## Client config (externalized, not hardcoded)
 
-`config/mehua-config.json` is the source of truth for business values, but
-n8n has no clean cross-branch config include, so its object is **duplicated**
-into four `Load Mehua Config` nodes inside the workflow JSON. Edit the config
-file first, then update all four node copies to match —
-`tests/workflow-integrity.test.js` fails the build if they drift.
-`config/booking-log-headers.csv` similarly must match the workflow's Sheets
-column mappings.
+`config/mehua-config.json` is the single source of truth for business values.
+The workflow's four `Load Mehua Config` nodes carry **no client-specific
+values** — they read `JSON.parse($env.CLIENT_CONFIG_JSON)` at runtime, so the
+workflow file is identical across clients. After editing the config file,
+regenerate the env var with `node scripts/render-client-env.js
+config/mehua-config.json` and update `.env` (local and any deployed
+instance) — `tests/workflow-integrity.test.js` fails the build if a
+`Load Mehua Config` node ever regresses back to embedding a literal value.
+Onboarding client #2 is a new config file + a new `.env`, not a fork of the
+workflow. `config/booking-log-headers.csv` similarly must match the
+workflow's Sheets column mappings.
 
 ## Before treating anything as "done"
 
@@ -62,7 +66,8 @@ expression-resolution alone.
 - `config/` — business config (`mehua-config.json`) and CSV schema, separate
   from generic logic. `*.local.json` here is gitignored real wiring data.
 - `scripts/` — `n8n.js` (CLI wrapper: credentials/workflows/import/execute),
-  `wire-workflow.js`, `provision-test-sheet.js`, `make-branch-workflow.js`,
+  `wire-workflow.js`, `render-client-env.js` (client config → `CLIENT_CONFIG_JSON`),
+  `provision-test-sheet.js`, `make-branch-workflow.js`,
   `dump-test-sheet.js`, plus the test runner and compose validator.
 - `tests/` — dependency-free Node suites and sanitized Fresha fixtures.
 - `docs/` — spec, Google integration test procedure, payment automation

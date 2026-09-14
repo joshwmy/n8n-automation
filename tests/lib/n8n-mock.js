@@ -24,6 +24,28 @@ const WORKFLOW_PATH = path.join(
   "mehua-deposit-concierge.n8n.json"
 );
 
+const DEFAULT_CLIENT_CONFIG_PATH = path.join(
+  __dirname,
+  "..",
+  "..",
+  "config",
+  "mehua-config.json"
+);
+
+/**
+ * The workflow's "Load Mehua Config" nodes read CLIENT_CONFIG_JSON from
+ * $env at runtime. Tests need no Docker/n8n instance, so by default this
+ * mirrors production with the same real client config file on disk -
+ * override via the real environment variable if a test needs to.
+ */
+function defaultEnv() {
+  return {
+    CLIENT_CONFIG_JSON:
+      process.env.CLIENT_CONFIG_JSON ||
+      fs.readFileSync(DEFAULT_CLIENT_CONFIG_PATH, "utf8"),
+  };
+}
+
 /** The 28-column Booking Log schema, in sheet order (A:AB). */
 const SHEET_COLUMNS = [
   "Booking Reference",
@@ -131,7 +153,7 @@ function evalExpression(raw, ctx) {
  * Run a Code node's real JavaScript. items is an array of plain json objects;
  * returns n8n-shaped [{ json }].
  */
-function runCodeNode(name, items, nodeOutputs) {
+function runCodeNode(name, items, nodeOutputs, env) {
   const node = getNode(name);
   if (node.type !== "n8n-nodes-base.code") {
     throw new Error(name + " is not a Code node (" + node.type + ")");
@@ -142,9 +164,15 @@ function runCodeNode(name, items, nodeOutputs) {
     item: { json: items[0] },
   };
   const $ = makeNodeAccessor(nodeOutputs || {});
+  const $env = env || defaultEnv();
   // eslint-disable-next-line no-new-func
-  const fn = new Function("$input", "$", "return (function(){\n" + code + "\n})();");
-  return fn($input, $);
+  const fn = new Function(
+    "$input",
+    "$",
+    "$env",
+    "return (function(){\n" + code + "\n})();"
+  );
+  return fn($input, $, $env);
 }
 
 // --------------------------------------------------------------------------
@@ -280,6 +308,8 @@ function summary(title) {
 module.exports = {
   SHEET_COLUMNS,
   WORKFLOW_PATH,
+  DEFAULT_CLIENT_CONFIG_PATH,
+  defaultEnv,
   loadWorkflow,
   workflow,
   getNode,

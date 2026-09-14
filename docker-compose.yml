@@ -25,6 +25,7 @@ services:
       - N8N_PORT=${N8N_PORT:-5678}
       - N8N_PROTOCOL=${N8N_PROTOCOL:-http}
       - N8N_SECURE_COOKIE=${N8N_SECURE_COOKIE:-false}
+      - CLIENT_CONFIG_JSON=${CLIENT_CONFIG_JSON:?Set CLIENT_CONFIG_JSON in .env — generate it with scripts/render-client-env.js}
     volumes:
       - n8n_data:/home/node/.n8n
     healthcheck:
